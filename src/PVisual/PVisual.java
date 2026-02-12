@@ -22,6 +22,7 @@ public class PVisual {
     int frameX = 0;
     int frameY = 0;
     static int screenWidth     = (int)Toolkit.getDefaultToolkit().getScreenSize().getWidth();
+    VisualFrame vf = new VisualFrame();
       
         // width will store the width of the screen
         
@@ -30,32 +31,16 @@ public class PVisual {
         //parent.registerMethod("dispose", this);
     }
 
-    public  void show() {
-        int width = 400;
-        int height = 400;
-        PImage sketchImage = parent.get();
-        BufferedImage bi = (BufferedImage) sketchImage.getNative();
-        JFrame f = new JFrame();
-        f.setTitle("JVisual");
-        JLabel jl = new JLabel("JVisual");
-        ImageIcon ic = new ImageIcon(bi);
-        jl.setIcon(ic);
-        f.add(jl);
-        f.setLocation(frameX, frameY);
-          frameX +=width;
-          if(frameX+width>screenWidth){
-              frameX = 0;
-              frameY += height;
-          }
-        f.setSize(width,height);
-        
-        f.setVisible(true);
-
-
-    }
     
     public static void hello(){
         System.out.println("Hello PVisual");
+    }
+    
+    public void show(){
+        PImage sketchImage = parent.get();
+        BufferedImage bi = (BufferedImage) sketchImage.getNative();
+        vf.show(bi);
+        vf.setVisible(true);
     }
 
 }
