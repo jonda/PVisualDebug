@@ -21,27 +21,30 @@ public class PVisual {
     PApplet parent;
 
     VisualFrame vf = new VisualFrame();
-      
-        // width will store the width of the screen
-        
+
+    // width will store the width of the screen
     public PVisual(PApplet parent) {
         this.parent = parent;
         //parent.registerMethod("dispose", this);
     }
 
-    
-    public static void hello(){
+    public static void hello() {
         System.out.println("Hello PVisual");
     }
-    
-    public void show(){
-        show(VisualFrame.DO_NOT_SHOW_I);
-        
+
+    public void show() {
+        show(null, VisualFrame.DO_NOT_SHOW_I);
+
     }
-    public void show(int i){
+
+    public void show(int i) {
+        show(null, i);
+    }
+
+    public void show(String code, int i) {
         PImage sketchImage = parent.get();
         BufferedImage bi = (BufferedImage) sketchImage.getNative();
-        vf.show(bi,i);
+        vf.show(bi, code, i);
         vf.setVisible(true);
     }
 

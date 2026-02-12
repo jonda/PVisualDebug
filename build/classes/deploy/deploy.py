@@ -27,7 +27,7 @@ def zipdir(path, ziph):
     # ziph is zipfile handle
     for root, dirs, files in os.walk(path):
         for file in files:
-            ziph.write(os.path.join(root, file))
+            ziph.write(os.path.join(root, file).replace("\\","/"))
 os.chdir(base+"/..")
 print(os.getcwd())
 
@@ -37,4 +37,4 @@ zipf.close()
 
 print ("Installationsprogrammet avslutas")
 print ("run Processing")
-os.system("\"C:/Program Files/Processing 4.3/processing.exe\"");
+os.system("\"C:/Program Files/Processing 4.3/processing.exe\" \\\\SR-Disk-2\\Hem0010\\dahjon\\Documents\\Processing\\testPVisual\\testPVisual.pde");
