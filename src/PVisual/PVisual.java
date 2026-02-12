@@ -19,9 +19,7 @@ import processing.core.*;
 public class PVisual {
 
     PApplet parent;
-    int frameX = 0;
-    int frameY = 0;
-    static int screenWidth     = (int)Toolkit.getDefaultToolkit().getScreenSize().getWidth();
+
     VisualFrame vf = new VisualFrame();
       
         // width will store the width of the screen
@@ -37,9 +35,13 @@ public class PVisual {
     }
     
     public void show(){
+        show(VisualFrame.DO_NOT_SHOW_I);
+        
+    }
+    public void show(int i){
         PImage sketchImage = parent.get();
         BufferedImage bi = (BufferedImage) sketchImage.getNative();
-        vf.show(bi);
+        vf.show(bi,i);
         vf.setVisible(true);
     }
 

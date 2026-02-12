@@ -4,41 +4,51 @@
  */
 package PVisual;
 
+import java.awt.BorderLayout;
+import java.awt.Font;
+import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import processing.core.PImage;
 
 /**
  *
  * @author dahjon
  */
-public class VisualFrame extends JFrame{
-        JLabel jl = new JLabel("JVisual");
-        int width = 400;
-        int height = 400;
+public class VisualFrame extends JFrame {
+
+    JLabel imageLabel = new JLabel("JVisual");
+    JLabel debugLabel = new JLabel("i:?");
+    int width = 400;
+    int height = 400;
+    public static final int DO_NOT_SHOW_I = Integer.MIN_VALUE;
+    static int screenWidth = (int) Toolkit.getDefaultToolkit().getScreenSize().getWidth();
 
     public VisualFrame() {
-            setTitle("JVisual");
-        add(jl);
+        setTitle("JVisual");
+        add(imageLabel);
+        add(debugLabel, BorderLayout.NORTH);
         setSize(width, height);
-        setVisible(true);
-}
+        debugLabel.setFont(new Font("Lucida", Font.PLAIN, 24));
 
-    
-    
-    public void show(BufferedImage bi) {
+    }
+
+    public void show(BufferedImage bi, int i) {
         ImageIcon ic = new ImageIcon(bi);
-        jlsetIcon(ic);
+        imageLabel.setIcon(ic);
+        if (i != DO_NOT_SHOW_I) {
+            debugLabel.setText("i: " + i);
+        } else {
+            debugLabel.setText("");
+        }
+
 //        f.setLocation(pVisual.frameX, pVisual.frameY);
 //        pVisual.frameX += width;
 //        if (pVisual.frameX + width > PVisual.screenWidth) {
 //            pVisual.frameX = 0;
 //            pVisual.frameY += height;
 //        }
-        PImage sketchImage = pVisual.parent.get();
-        BufferedImage bi = (BufferedImage) sketchImage.getNative();
     }
-    
+
 }
