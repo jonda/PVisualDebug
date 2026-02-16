@@ -1,0 +1,147 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package PVisualTool;
+
+import PVisual.VisualFrame;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ *
+ * @author dahjon
+ */
+public class InsertUtils {
+
+    public final static String START_OF_FUNCTION = "pv.show";
+    public final static String IMPORT_LINE = "import PVisual.PVisual;\n";
+    public final static String CREATE_PV_LINE = "PVisual pv = new PVisual(this);\n";
+    final static Pattern IMPORT_PATTERN = Pattern.compile("import +PVisual.");
+    final static Pattern CREATE_PV_PATTERN = Pattern.compile("PVisual +pv *= *new +PVisual *\\( *this *\\)");
+    //PVisual pv = new PVisual(this);
+
+    public enum BlockType {
+        FOR, WHILE, IF, FUNCTION, UNKNOWN
+    };
+
+    static private boolean checkIfAlreadyThere(StringBuilder sb, int origIndex) {
+        System.out.println("->checkIfAlreadyThere:  origIndex = " + origIndex);
+        int startIndex = getStartOfLine(sb, origIndex - 2);
+        int endIndex = getStartOfNextLine(sb, origIndex) - 1;
+
+        if (endIndex == -1) {
+            endIndex = sb.length() - 1;
+        }
+
+        System.out.println("startIndex = " + startIndex + ", endIndex = " + endIndex);
+        System.out.println("sb.length() = " + sb.length());
+        if (endIndex > startIndex) {
+            String line = sb.subSequence(startIndex, endIndex).toString();
+            line = line.trim();
+            System.out.println("line = " + line);
+            return line.startsWith(START_OF_FUNCTION);
+        }
+        return false;
+    }
+
+    public static BlockType getBlockType(StringBuilder sb, int origIndex) {
+        int startIndex = getStartOfLine(sb, origIndex);
+        String line = sb.substring(startIndex, origIndex).trim();
+        System.out.println("getBlockType line = " + line);
+        if (line.startsWith("for")) {
+            return BlockType.FOR;
+        } else if (line.startsWith("while")) {
+            return BlockType.WHILE;
+        }
+        return BlockType.UNKNOWN;
+    }
+
+    public static String insertPVisualFunctions(String code) {
+        StringBuilder sb = new StringBuilder(code);
+        insertImport(sb);
+        insertCreatePv(sb);
+        int braceInd = sb.indexOf("{");
+
+        while (braceInd > 0) {
+            int curIndex = handleBlock(code, sb, braceInd);
+            braceInd = sb.indexOf("{", curIndex);
+        }
+        return sb.toString();
+    }
+
+    private static int handleBlock(String code, StringBuilder sb, int braceInd) {
+        BlockType type = getBlockType(sb, braceInd);
+        System.out.println("type = " + type);
+        String indexVariableName = "";
+        if (type == BlockType.FOR) {
+            indexVariableName = VisualFrame.findIndexVariable(code);
+        }
+        //sb.insert(PrevRowInd+1, "pv.show();\n");
+        int endBraceIndex = sb.indexOf("}", braceInd);
+        String textToInsert = "  pv.show(" + indexVariableName + ");\n";
+        final int lastInBlockIndex = getStartOfLine(sb, endBraceIndex);
+
+        if (!checkIfAlreadyThere(sb, lastInBlockIndex)) {
+            sb.insert(lastInBlockIndex, textToInsert);
+            endBraceIndex += textToInsert.length();
+        }
+        if (type == BlockType.FOR || type == BlockType.WHILE) {
+            if (type == BlockType.FOR) {
+                textToInsert = "  pv.showAfterFor();\n";
+            }
+            final int afterBlockIndex = getStartOfNextLine(sb, endBraceIndex);
+            System.out.println("afterBlockIndex = " + afterBlockIndex);
+            if (!checkIfAlreadyThere(sb, afterBlockIndex + 3)) {
+                sb.insert(afterBlockIndex, textToInsert);
+            }
+        }
+        return endBraceIndex;
+    }
+
+    private static int getStartOfNextLine(StringBuilder sb, int index) {
+        int PrevRowInd = sb.indexOf("\n", index) + 1;
+        if (PrevRowInd > 0) {
+            return PrevRowInd;
+        } else {
+            return sb.length() - 1;
+        }
+    }
+
+    private static int getStartOfLine(StringBuilder sb, int braceInd) {
+        int PrevRowInd = sb.lastIndexOf("\n", braceInd) + 1;
+        return PrevRowInd;
+    }
+
+    public static void main(String[] args) {
+        String code = "import PVisual.*;\n" + "PVisual pv = new PVisual(this);\n" + "size(400, 400);\n" + "fill(255, 0, 0);   \n" + "for (int i=0; i < 20; i++) {\n" + "  delay(500);\n" + "  circle(20*i, 20*i, 20+10*i);\n" + "}\n" + "\n" + "";
+        String res = insertPVisualFunctions(code);
+        System.out.println("res = " + res);
+    }
+
+    static void insertImport(StringBuilder sb) {
+
+        Matcher m = IMPORT_PATTERN.matcher(sb);
+
+        if (!m.find()) {
+            sb.insert(0, IMPORT_LINE);
+        }
+    }
+
+    static void insertCreatePv(StringBuilder sb) {
+
+        Matcher m = CREATE_PV_PATTERN.matcher(sb);
+        int index = 0;
+        if (!m.find()) {
+            Matcher im = IMPORT_PATTERN.matcher(sb);
+            if (im.find()) {
+                index = im.end();
+                System.out.println("insertCreatePv index = " + index);
+            } else {
+                System.out.println("insertCreatePv: Hittade ingen import");
+            }
+            int nextLine = getStartOfNextLine(sb, index);
+            sb.insert(nextLine, CREATE_PV_LINE);
+        }
+    }
+}

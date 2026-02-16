@@ -1,10 +1,7 @@
 package PVisual;
 
-import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
+
 import processing.core.*;
 
 /*
@@ -19,7 +16,7 @@ import processing.core.*;
 public class PVisual {
 
     PApplet parent;
-
+    int DELAY = 500;
     VisualFrame vf = new VisualFrame();
 
     // width will store the width of the screen
@@ -30,22 +27,53 @@ public class PVisual {
 
     public static void hello() {
         System.out.println("Hello PVisual");
+
     }
 
     public void show() {
-        show(null, VisualFrame.DO_NOT_SHOW_I);
+        show(VisualFrame.DO_NOT_SHOW_I);
 
     }
 
     public void show(int i) {
-        show(null, i);
+        String code = getCode();
+        show(code, i);
+        
+    }
+    public void showAfterFor() {
+        String code = getCode();
+        show(code, vf.getLastIndex()+1);
+        System.out.println("Väntar nu: "+DELAY);
     }
 
+    private String getCode() {
+        String sketchName = parent.sketchFile(parent.sketchPath()).getName();
+
+        System.out.println("Sketchens namn är : " + sketchName);
+
+        // Nu kan du använda namnet för att titta på koden:
+        String fileName = sketchName + ".pde";
+        String[] codeLines = parent.loadStrings(fileName);
+        String code = "";
+        if (codeLines != null) {
+            //parent.println("--- KODEN FRÅN " + fileName + " ---");
+            for (String line : codeLines) {
+                //parent.println(line);
+                code += line + "\n";
+            }
+        }
+        return code;
+    }
+
+    
     public void show(String code, int i) {
         PImage sketchImage = parent.get();
         BufferedImage bi = (BufferedImage) sketchImage.getNative();
         vf.show(bi, code, i);
         vf.setVisible(true);
+        parent.delay(DELAY);
+        
+        
     }
 
 }

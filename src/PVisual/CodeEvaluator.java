@@ -24,8 +24,8 @@ public class CodeEvaluator {
         int repValue = 5; // Vi testar med 5. (5 < 20 ska bli "true")
 
         String result = processCode(rawCode, repValue);
-        System.out.println("--- RESULTAT ---");
-        System.out.println(result);
+        //System.out.println("--- RESULTAT ---");
+        //System.out.println(result);
     }
 
     public static String processCode(String code, int val) {

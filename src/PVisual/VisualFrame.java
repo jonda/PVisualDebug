@@ -30,6 +30,7 @@ public class VisualFrame extends JFrame {
     int height = 400;
     public static final int DO_NOT_SHOW_I = Integer.MIN_VALUE;
     static int screenWidth = (int) Toolkit.getDefaultToolkit().getScreenSize().getWidth();
+    int lastIndex = 0;
 
     public VisualFrame() {
         setTitle("JVisual");
@@ -41,7 +42,11 @@ public class VisualFrame extends JFrame {
 
     }
 
-    static String findIndexVariable(String code) {
+    public int getLastIndex() {
+        return lastIndex;
+    }
+
+    public static String findIndexVariable(String code) {
         //String code = "for (int counter = 0; counter < 20; counter++)";
 
         // Regex-mönstret
@@ -54,10 +59,10 @@ public class VisualFrame extends JFrame {
         if (matcher.find()) {
             // group(1) returnerar det som fanns inuti första parentesen i vårt regex
             String variableName = matcher.group(1);
-            System.out.println("Hittad indexvariabel: '" + variableName+"'");
+            //System.out.println("Hittad indexvariabel: '" + variableName + "'");
             return variableName.trim();
         } else {
-            System.out.println("Ingen matchning hittades.");
+            //System.out.println("Ingen matchning hittades.");
             return "";
         }
     }
@@ -71,22 +76,23 @@ public class VisualFrame extends JFrame {
     public void show(BufferedImage bi, String origCode, int i) {
         ImageIcon ic = new ImageIcon(bi);
         imageLabel.setIcon(ic);
+        lastIndex = i;
         if (origCode == null) {
             origCode = "i";
         }
         if (origCode.contains("(")) {
             String indexVariable = findIndexVariable(origCode);
-            String code1 = replaceIndexVariable(origCode,  i+"");
+            String code1 = replaceIndexVariable(origCode, i + "");
             String code2 = CodeEvaluator.processCode(origCode, i);
-            code1 = indexVariable + ":"+i+"\n"
-                    + "Först byter vi ut varabeln med dess värde\n"+
-                    code1+
-                    "\n\nOch sedan räknar vi ut uttrycket\n"+
-                    code2;
+            code1 = indexVariable + ":" + i + "\n"
+                    + "Först byter vi ut varabeln med dess värde\n"
+                    + code1
+                    + "\n\nOch sedan räknar vi ut uttrycket\n"
+                    + code2;
             debugLabel.setText(code1);
         } else {
             if (i != DO_NOT_SHOW_I) {
-                debugLabel.setText(origCode+": " + i);
+                debugLabel.setText(origCode + ": " + i);
             } else {
                 debugLabel.setText("");
             }
@@ -98,17 +104,15 @@ public class VisualFrame extends JFrame {
 //            pVisual.frameX = 0;
 //            pVisual.frameY += height;
 //        }
+        pack();
     }
-
-
-
 
 //-----------------------------------
     public static String replaceIndexVariable(String code, String replacement) {
         // 1. Hitta variabelnamnet (t.ex. "i")
         Pattern pattern = Pattern.compile("for\\s*\\(\\s*int\\s+(\\w+)");
         Matcher matcher = pattern.matcher(code);
-        
+
         String varName = "";
         if (matcher.find()) {
             varName = matcher.group(1);
@@ -120,20 +124,21 @@ public class VisualFrame extends JFrame {
         int forIndex = code.indexOf("for");
         int openParen = code.indexOf("(", forIndex);
         int closeParen = code.indexOf(")", openParen);
-        
+
         // Om vi inte hittar parenteserna, avbryt
-        if (openParen == -1 || closeParen == -1) return code;
+        if (openParen == -1 || closeParen == -1) {
+            return code;
+        }
 
         // 3. Extrahera innehållet i for-loopen: "int i=0; i < 20; i++"
         String forContent = code.substring(openParen + 1, closeParen);
-        
+
         // Dela upp innehållet vid semikolon
         String[] forParts = forContent.split(";");
-        
+
         StringBuilder sb = new StringBuilder();
 
         // --- BYGG IHOP KODEN IGEN ---
-
         // A. Lägg till allt INNAN for-loopen (t.ex. "fill(255...  for ")
         sb.append(code.substring(0, openParen + 1));
 
