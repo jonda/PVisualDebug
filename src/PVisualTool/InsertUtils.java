@@ -15,11 +15,31 @@ import java.util.regex.Pattern;
 public class InsertUtils {
 
     public final static String START_OF_FUNCTION = "pv.show";
-    public final static String IMPORT_LINE = "import PVisual.PVisual;\n";
-    public final static String CREATE_PV_LINE = "PVisual pv = new PVisual(this);\n";
+    public final static String REMOVE_MESSAGE = " // Line will be removed when PVisualConfig is closed\n";
+    public final static String IMPORT_LINE = "import PVisual.PVisual;"+REMOVE_MESSAGE;
+    public final static String CREATE_PV_LINE = "PVisual pv = new PVisual(this);"+REMOVE_MESSAGE;
     final static Pattern IMPORT_PATTERN = Pattern.compile("import +PVisual.");
     final static Pattern CREATE_PV_PATTERN = Pattern.compile("PVisual +pv *= *new +PVisual *\\( *this *\\)");
+    //final static Pattern REMOVE_PV_PATTERN = 
     //PVisual pv = new PVisual(this);
+
+    static String removePVisualFunctions(String code) {
+        StringBuilder sb = new StringBuilder(code);
+        
+        int foundIndex = sb.indexOf(REMOVE_MESSAGE);
+        while(foundIndex>=0){
+            int start = getStartOfLine(sb, foundIndex);
+            int end = getStartOfNextLine(sb, foundIndex);
+            System.out.println("start = " + start+", end = " + end+", sb.length() = " + sb.length());
+            System.out.println("sb.substring(start, end): "+sb.substring(start, end));
+            sb.delete(start, end);
+            
+            foundIndex = sb.indexOf(REMOVE_MESSAGE, start);
+            System.out.println("foundIndex = " + foundIndex+", sb.length() = " + sb.length());
+        }
+        return sb.toString();
+        
+    }
 
     public enum BlockType {
         FOR, WHILE, IF, FUNCTION, UNKNOWN
@@ -79,7 +99,7 @@ public class InsertUtils {
         }
         //sb.insert(PrevRowInd+1, "pv.show();\n");
         int endBraceIndex = sb.indexOf("}", braceInd);
-        String textToInsert = "  pv.show(" + indexVariableName + ");\n";
+        String textToInsert = "  pv.show(" + indexVariableName + ");"+REMOVE_MESSAGE;
         final int lastInBlockIndex = getStartOfLine(sb, endBraceIndex);
 
         if (!checkIfAlreadyThere(sb, lastInBlockIndex)) {
@@ -88,7 +108,7 @@ public class InsertUtils {
         }
         if (type == BlockType.FOR || type == BlockType.WHILE) {
             if (type == BlockType.FOR) {
-                textToInsert = "  pv.showAfterFor();\n";
+                textToInsert = "  pv.showAfterFor();"+REMOVE_MESSAGE;
             }
             final int afterBlockIndex = getStartOfNextLine(sb, endBraceIndex);
             System.out.println("afterBlockIndex = " + afterBlockIndex);
@@ -104,6 +124,7 @@ public class InsertUtils {
         if (PrevRowInd > 0) {
             return PrevRowInd;
         } else {
+            sb.append("\n");
             return sb.length() - 1;
         }
     }

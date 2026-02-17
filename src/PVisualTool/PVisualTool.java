@@ -22,11 +22,8 @@ public class PVisualTool  implements Tool {
 
   public void run() {
     // Run this Tool on the currently active Editor window
-    Editor editor = base.getActiveEditor();
-    String code = editor.getText();
-    String newCode = InsertUtils.insertPVisualFunctions(code);
-    editor.setText(newCode);
     //editor.setText("Deleted your code. What now?");
+    new PVisualConfig(base);
   }
 
   public String getMenuTitle() {
