@@ -5,52 +5,104 @@
 package PVisual;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
+
 import javax.swing.ImageIcon;
-import javax.swing.JFrame;
+import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JTextArea;
+
+import processing.core.PApplet;
 
 /**
  *
  * @author dahjon
  */
-public class VisualFrame extends JFrame {
+public class VisualFrame extends JDialog {
+
+    boolean autoMode = false;
 
     JLabel imageLabel = new JLabel("JVisual");
     JTextArea debugLabel = new JTextArea("i:?");
+    //JButton nextButton = new JButton("Nästa");
+    JPanel upperPanel = new JPanel();
     
+
 //        JEditTextArea debugLabel = new JEditTextArea(new PdeTextAreaDefaults(),
 //                             new PdeInputHandler());
-
     int width = 400;
     int height = 400;
     public static final int DO_NOT_SHOW_I = Integer.MIN_VALUE;
     static int screenWidth = (int) Toolkit.getDefaultToolkit().getScreenSize().getWidth();
     int lastIndex = 0;
 
-    public VisualFrame() {
+    public VisualFrame(PApplet par, int delayValue) {
+        //setModal(!autoMode);
+        
+        if(delayValue>=0){
+            autoMode = true;
+        }
         setTitle("JVisual");
         add(imageLabel);
-        add(debugLabel, BorderLayout.NORTH);
+        add(upperPanel, BorderLayout.NORTH);
+//        if (!autoMode) {
+//            upperPanel.add(nextButton, BorderLayout.NORTH);
+//            nextButton.addActionListener(this::nextButtonPerformed);
+//        }
+        upperPanel.add(debugLabel, BorderLayout.SOUTH);
         debugLabel.setEditable(false);
-        debugLabel.setFont(new Font( "Monospaced", Font.PLAIN, 20 ));
+        debugLabel.setFont(new Font("Monospaced", Font.PLAIN, 20));
         setSize(width, height);
+        setLocation(100, 100);
         //debugLabel.setFont(new Font("Lucida", Font.PLAIN, 24));
+
+    }
+
+//    void nextButtonPerformed(ActionEvent ae) {
+//        setVisible(false);
+//        Timer tim = new Timer(0, this::showAgainPerformed);
+//
+//    }
+//
+//    void showAgainPerformed(ActionEvent ae) {
+//        setVisible(true);
+//
+//    }
+    void waitForNextButton() {
+//        JOptionPane optionPane = new JOptionPane("Tryck på knappen för att gå vidare", JOptionPane.INFORMATION_MESSAGE);
+//        
+//        JDialog dialog = optionPane.createDialog("Title");
+//        dialog.setVisible(true);
+        JDialog d = new JDialog(this, true);
+        JButton knapp = new JButton("Gå vidare");
+        knapp.addActionListener((ae) -> {
+            System.out.println("gömmer nu");
+            d.setVisible(false);
+            d.dispose();
+        });
+        knapp.setFont(new Font("Lucida", Font.PLAIN, 50));
+        d.add(knapp);
+        d.pack();
+        Point p = getLocation();
+        Dimension s = d.getSize();
+        d.setLocation(p.x, p.y - s.height); // Set custom location
+        d.setVisible(true);
 
     }
 
     public int getLastIndex() {
         return lastIndex;
     }
-public static void main(String[] args) {
+
+    public static void main(String[] args) {
         // Testfall
         System.out.println(extractVariable("while(a<5)"));           // Output: a
         System.out.println(extractVariable("while(s.equals(\"hej\"))")); // Output: s
@@ -89,6 +141,7 @@ public static void main(String[] args) {
 
         return "Ingen variabel hittades";
     }
+
     public static String findIndexVariable(String code) {
         //String code = "for (int counter = 0; counter < 20; counter++)";
 
@@ -117,6 +170,7 @@ public static void main(String[] args) {
 //        return retVal;
 //    }
     public void show(BufferedImage bi, String origCode, int i, BlockType type) {
+        setVisible(true);
         ImageIcon ic = new ImageIcon(bi);
         imageLabel.setIcon(ic);
         lastIndex = i;
@@ -126,17 +180,15 @@ public static void main(String[] args) {
         if (origCode.contains("(")) {
             String indexVariable;
             String code1;
-            if(type==BlockType.FOR){
-               indexVariable = findIndexVariable(origCode);
-               code1 = replaceIndexVariable(origCode, i + "");
+            if (type == BlockType.FOR) {
+                indexVariable = findIndexVariable(origCode);
+                code1 = replaceIndexVariable(origCode, i + "");
+            } else {
+                indexVariable = extractVariable(origCode);
+                code1 = replaceSafe(origCode, indexVariable, i + "");
             }
-            else {
-               indexVariable = extractVariable(origCode);
-               code1=replaceSafe(origCode, indexVariable, i+"");
-            }
-            
-            
-            String code2 = CodeEvaluator.processCode(origCode,indexVariable ,i);
+
+            String code2 = CodeEvaluator.processCode(origCode, indexVariable, i);
             code1 = indexVariable + ":" + i + "\n"
                     + "Först byter vi ut varabeln med dess värde\n"
                     + code1
@@ -144,7 +196,7 @@ public static void main(String[] args) {
                     + code2;
             debugLabel.setText(code1);
         } else {
-            System.out.println("i = " + i+", DO_NOT_SHOW_I = " + DO_NOT_SHOW_I);
+            System.out.println("i = " + i + ", DO_NOT_SHOW_I = " + DO_NOT_SHOW_I);
             if (i != DO_NOT_SHOW_I) {
                 debugLabel.setText(origCode + ": " + i);
             } else {
@@ -159,6 +211,9 @@ public static void main(String[] args) {
 //            pVisual.frameY += height;
 //        }
         pack();
+        if (!autoMode) {
+            waitForNextButton();
+        }
     }
 
 //-----------------------------------

@@ -9,9 +9,13 @@ import java.awt.HeadlessException;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.border.TitledBorder;
 import processing.app.Base;
 import processing.app.ui.Editor;
 import processing.app.ui.EditorToolbar;
@@ -25,6 +29,8 @@ public class PVisualConfig extends JFrame {
     JPanel buttonPanel = new JPanel();
     JButton addPVisionFunctionsButton = new JButton("Kör");//("Lägg till funktioner i koden som krävs för PVision");
     JButton removePVisionFunctionsButton = new JButton("Stäng");//("Ta bort PVision-relaterade funktioner från koden ");
+    JCheckBox clickCheckBox = new JCheckBox("Klicka för varje steg");
+    JTextField delayField = new JTextField(15);
     JTextArea codeArea = new JTextArea();
     Base base;
     
@@ -35,6 +41,14 @@ public class PVisualConfig extends JFrame {
         add(buttonPanel);
         buttonPanel.add(addPVisionFunctionsButton);
         buttonPanel.add(removePVisionFunctionsButton);
+        buttonPanel.add(clickCheckBox);
+        JPanel delayPanel = new JPanel();
+        buttonPanel.add(delayPanel);
+        //delayPanel.add(new JLabel("Ange elay i millisektunder: "));
+        delayField.setText("500");
+        delayPanel.add(delayField);
+        delayPanel.setBorder(new TitledBorder("Fördröjning mellan varje steg"));
+        clickCheckBox.addActionListener(this::checkBoxActionPerformed);
         addPVisionFunctionsButton.addActionListener(this::addFunctionsActionPerformed);
         removePVisionFunctionsButton.addActionListener(this::removeFunctionsActionPerformed);
         pack();
@@ -44,11 +58,19 @@ public class PVisualConfig extends JFrame {
         setVisible(true);
     }
     
+    void checkBoxActionPerformed(ActionEvent ae) {
+        delayField.setEnabled(!clickCheckBox.isSelected());
+    }
+    
     void addFunctionsActionPerformed(ActionEvent ae) {
         Editor editor = base.getActiveEditor();
         
         String code = editor.getText();
-        String newCode = InsertUtils.insertPVisualFunctions(code);
+        int delayValue = -1;
+        if(!clickCheckBox.isSelected()){
+            delayValue = Integer.parseInt(delayField.getText());
+        }
+        String newCode = InsertUtils.insertPVisualFunctions( code, delayValue);
         editor.setText(newCode);
         EditorToolbar et = editor.getToolbar();
         System.out.println("et.handleRun()");

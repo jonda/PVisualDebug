@@ -16,12 +16,15 @@ import processing.core.*;
 public class PVisual {
 
     PApplet parent;
-    int DELAY = 500;
-    VisualFrame vf = new VisualFrame();
+    int delayValue;
+    VisualFrame vf;
 
     // width will store the width of the screen
-    public PVisual(PApplet parent) {
+    public PVisual(PApplet parent, int delayValue) {
+        this.delayValue = delayValue;
         this.parent = parent;
+         vf = new VisualFrame(parent, delayValue);
+        
         //parent.registerMethod("dispose", this);
     }
 
@@ -40,15 +43,17 @@ public class PVisual {
         show(code, i);
 
     }
+
     public void show(int i, BlockType type) {
         String code = getCode();
         show(code, i, type);
 
     }
+
     public void showAfterFor() {
         String code = getCode();
         show(code, vf.getLastIndex() + 1);
-        System.out.println("Väntar nu: " + DELAY);
+        System.out.println("Väntar nu: " + delayValue);
     }
 
     private String getCode() {
@@ -73,14 +78,15 @@ public class PVisual {
     public void show(String code, int i) {
         show(code, i, BlockType.FOR);
     }
- 
 
     public void show(String code, int i, BlockType type) {
         PImage sketchImage = parent.get();
         BufferedImage bi = (BufferedImage) sketchImage.getNative();
         vf.show(bi, code, i, type);
-        vf.setVisible(true);
-        parent.delay(DELAY);
+        //vf.setVisible(true);
+        if (delayValue!=-1) {
+            parent.delay(delayValue);
+        }
 
     }
 

@@ -18,7 +18,6 @@ public class InsertUtils {
     public final static String START_OF_FUNCTION = "pv.show";
     public final static String REMOVE_MESSAGE = " // Line will be removed when PVisualConfig is closed\n";
     public final static String IMPORT_LINE = "import PVisual.*;" + REMOVE_MESSAGE;
-    public final static String CREATE_PV_LINE = "PVisual pv = new PVisual(this);" + REMOVE_MESSAGE;
     final static Pattern IMPORT_PATTERN = Pattern.compile("import +PVisual.");
     final static Pattern CREATE_PV_PATTERN = Pattern.compile("PVisual +pv *= *new +PVisual *\\( *this *\\)");
     //final static Pattern REMOVE_PV_PATTERN = 
@@ -74,10 +73,10 @@ public class InsertUtils {
         return BlockType.UNKNOWN;
     }
 
-    public static String insertPVisualFunctions(String code) {
+    public static String insertPVisualFunctions(String code,int delayValue) {
         StringBuilder sb = new StringBuilder(code);
         insertImport(sb);
-        insertCreatePv(sb);
+        insertCreatePv(sb, delayValue);
         int braceInd = sb.indexOf("{");
 
         while (braceInd > 0) {
@@ -170,7 +169,7 @@ public class InsertUtils {
                 + "   a--;\n"
                 + "}";
         //      String code = "import PVisual.*;\n" + "PVisual pv = new PVisual(this);\n" + "size(400, 400);\n" + "fill(255, 0, 0);   \n" + "for (int i=0; i < 20; i++) {\n" + "  delay(500);\n" + "  circle(20*i, 20*i, 20+10*i);\n" + "}\n" + "\n" + "";
-        String res = insertPVisualFunctions(code);
+        String res = insertPVisualFunctions(code, 500);
         System.out.println("res = " + res);
     }
 
@@ -183,7 +182,7 @@ public class InsertUtils {
         }
     }
 
-    static void insertCreatePv(StringBuilder sb) {
+    static void insertCreatePv(StringBuilder sb, int delayValue) {
 
         Matcher m = CREATE_PV_PATTERN.matcher(sb);
         int index = 0;
@@ -196,6 +195,8 @@ public class InsertUtils {
                 System.out.println("insertCreatePv: Hittade ingen import");
             }
             int nextLine = getStartOfNextLine(sb, index);
+            String CREATE_PV_LINE = "PVisual pv = new PVisual(this, "+delayValue+");" + REMOVE_MESSAGE;
+            
             sb.insert(nextLine, CREATE_PV_LINE);
         }
     }
