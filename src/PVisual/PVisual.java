@@ -38,12 +38,17 @@ public class PVisual {
     public void show(int i) {
         String code = getCode();
         show(code, i);
-        
+
+    }
+    public void show(int i, BlockType type) {
+        String code = getCode();
+        show(code, i, type);
+
     }
     public void showAfterFor() {
         String code = getCode();
-        show(code, vf.getLastIndex()+1);
-        System.out.println("Väntar nu: "+DELAY);
+        show(code, vf.getLastIndex() + 1);
+        System.out.println("Väntar nu: " + DELAY);
     }
 
     private String getCode() {
@@ -65,15 +70,18 @@ public class PVisual {
         return code;
     }
 
-    
     public void show(String code, int i) {
+        show(code, i, BlockType.FOR);
+    }
+ 
+
+    public void show(String code, int i, BlockType type) {
         PImage sketchImage = parent.get();
         BufferedImage bi = (BufferedImage) sketchImage.getNative();
-        vf.show(bi, code, i);
+        vf.show(bi, code, i, type);
         vf.setVisible(true);
         parent.delay(DELAY);
-        
-        
+
     }
 
 }

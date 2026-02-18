@@ -4,6 +4,7 @@
  */
 package PVisualTool;
 
+import PVisual.BlockType;
 import PVisual.VisualFrame;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,8 +17,8 @@ public class InsertUtils {
 
     public final static String START_OF_FUNCTION = "pv.show";
     public final static String REMOVE_MESSAGE = " // Line will be removed when PVisualConfig is closed\n";
-    public final static String IMPORT_LINE = "import PVisual.PVisual;"+REMOVE_MESSAGE;
-    public final static String CREATE_PV_LINE = "PVisual pv = new PVisual(this);"+REMOVE_MESSAGE;
+    public final static String IMPORT_LINE = "import PVisual.*;" + REMOVE_MESSAGE;
+    public final static String CREATE_PV_LINE = "PVisual pv = new PVisual(this);" + REMOVE_MESSAGE;
     final static Pattern IMPORT_PATTERN = Pattern.compile("import +PVisual.");
     final static Pattern CREATE_PV_PATTERN = Pattern.compile("PVisual +pv *= *new +PVisual *\\( *this *\\)");
     //final static Pattern REMOVE_PV_PATTERN = 
@@ -25,25 +26,21 @@ public class InsertUtils {
 
     static String removePVisualFunctions(String code) {
         StringBuilder sb = new StringBuilder(code);
-        
+
         int foundIndex = sb.indexOf(REMOVE_MESSAGE);
-        while(foundIndex>=0){
+        while (foundIndex >= 0) {
             int start = getStartOfLine(sb, foundIndex);
             int end = getStartOfNextLine(sb, foundIndex);
-            System.out.println("start = " + start+", end = " + end+", sb.length() = " + sb.length());
-            System.out.println("sb.substring(start, end): "+sb.substring(start, end));
+            System.out.println("start = " + start + ", end = " + end + ", sb.length() = " + sb.length());
+            System.out.println("sb.substring(start, end): " + sb.substring(start, end));
             sb.delete(start, end);
-            
+
             foundIndex = sb.indexOf(REMOVE_MESSAGE, start);
-            System.out.println("foundIndex = " + foundIndex+", sb.length() = " + sb.length());
+            System.out.println("foundIndex = " + foundIndex + ", sb.length() = " + sb.length());
         }
         return sb.toString();
-        
-    }
 
-    public enum BlockType {
-        FOR, WHILE, IF, FUNCTION, UNKNOWN
-    };
+    }
 
     static private boolean checkIfAlreadyThere(StringBuilder sb, int origIndex) {
         System.out.println("->checkIfAlreadyThere:  origIndex = " + origIndex);
@@ -85,9 +82,26 @@ public class InsertUtils {
 
         while (braceInd > 0) {
             int curIndex = handleBlock(code, sb, braceInd);
-            braceInd = sb.indexOf("{", curIndex);
+            if (curIndex == -1) {
+                braceInd = -1;
+            } else {
+                braceInd = sb.indexOf("{", curIndex);
+            }
         }
         return sb.toString();
+    }
+
+    private static String getEscapedBlockCode(StringBuilder sb, int startBrace, int endBrace) {
+        if (endBrace != -1) {
+            int startIndex = getStartOfLine(sb, startBrace);
+
+            String bc = sb.substring(startIndex, endBrace);
+            bc = bc.replace("\n", "\\n");
+            bc = bc.replace("\"", "\\\"");
+            return bc;
+        }
+        return "";
+
     }
 
     private static int handleBlock(String code, StringBuilder sb, int braceInd) {
@@ -96,25 +110,33 @@ public class InsertUtils {
         String indexVariableName = "";
         if (type == BlockType.FOR) {
             indexVariableName = VisualFrame.findIndexVariable(code);
+        } else if (type == BlockType.WHILE) {
+            indexVariableName = VisualFrame.extractVariable(code);
         }
         //sb.insert(PrevRowInd+1, "pv.show();\n");
         int endBraceIndex = sb.indexOf("}", braceInd);
-        String textToInsert = "  pv.show(" + indexVariableName + ");"+REMOVE_MESSAGE;
-        final int lastInBlockIndex = getStartOfLine(sb, endBraceIndex);
+        System.out.println("braceInd = " + braceInd + ", endBraceIndex = " + endBraceIndex);
+        if (endBraceIndex != -1) {
+            String blockCode = getEscapedBlockCode(sb, braceInd, endBraceIndex);
+            System.out.println("blockCode = '" + blockCode + "' ::end blockCode");
+            String textToInsert = "  pv.show(\"" + blockCode + "\", " + indexVariableName + ", BlockType." + type.name() + ");" + REMOVE_MESSAGE;
+            final int lastInBlockIndex = getStartOfLine(sb, endBraceIndex);
 
-        if (!checkIfAlreadyThere(sb, lastInBlockIndex)) {
-            sb.insert(lastInBlockIndex, textToInsert);
-            endBraceIndex += textToInsert.length();
-        }
-        if (type == BlockType.FOR || type == BlockType.WHILE) {
-            if (type == BlockType.FOR) {
-                textToInsert = "  pv.showAfterFor();"+REMOVE_MESSAGE;
+            if (!checkIfAlreadyThere(sb, lastInBlockIndex)) {
+                sb.insert(lastInBlockIndex, textToInsert);
+                endBraceIndex += textToInsert.length();
             }
-            final int afterBlockIndex = getStartOfNextLine(sb, endBraceIndex);
-            System.out.println("afterBlockIndex = " + afterBlockIndex);
-            if (!checkIfAlreadyThere(sb, afterBlockIndex + 3)) {
-                sb.insert(afterBlockIndex, textToInsert);
+            if (type == BlockType.FOR || type == BlockType.WHILE) {
+                if (type == BlockType.FOR) {
+                    textToInsert = "  pv.showAfterFor();" + REMOVE_MESSAGE;
+                }
+                final int afterBlockIndex = getStartOfNextLine(sb, endBraceIndex);
+                System.out.println("afterBlockIndex = " + afterBlockIndex);
+                if (!checkIfAlreadyThere(sb, afterBlockIndex + 3)) {
+                    sb.insert(afterBlockIndex, textToInsert);
+                }
             }
+            System.out.println("endBraceIndex = " + endBraceIndex);
         }
         return endBraceIndex;
     }
@@ -135,7 +157,19 @@ public class InsertUtils {
     }
 
     public static void main(String[] args) {
-        String code = "import PVisual.*;\n" + "PVisual pv = new PVisual(this);\n" + "size(400, 400);\n" + "fill(255, 0, 0);   \n" + "for (int i=0; i < 20; i++) {\n" + "  delay(500);\n" + "  circle(20*i, 20*i, 20+10*i);\n" + "}\n" + "\n" + "";
+        String code = "size(400, 400);\n"
+                + "fill(255, 0, 0);   \n"
+                + "for (int i=0; i < 10; i++) {\n"
+                + "  circle(20*i, 20*i, 20+10*i);\n"
+                + "}\n"
+                + "\n"
+                + "int a = 14;\n"
+                + "fill(0,0,255);\n"
+                + "while(a>5){\n"
+                + "   square(30*a,30*a,30);\n"
+                + "   a--;\n"
+                + "}";
+        //      String code = "import PVisual.*;\n" + "PVisual pv = new PVisual(this);\n" + "size(400, 400);\n" + "fill(255, 0, 0);   \n" + "for (int i=0; i < 20; i++) {\n" + "  delay(500);\n" + "  circle(20*i, 20*i, 20+10*i);\n" + "}\n" + "\n" + "";
         String res = insertPVisualFunctions(code);
         System.out.println("res = " + res);
     }

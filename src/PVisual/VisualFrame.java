@@ -26,6 +26,10 @@ public class VisualFrame extends JFrame {
 
     JLabel imageLabel = new JLabel("JVisual");
     JTextArea debugLabel = new JTextArea("i:?");
+    
+//        JEditTextArea debugLabel = new JEditTextArea(new PdeTextAreaDefaults(),
+//                             new PdeInputHandler());
+
     int width = 400;
     int height = 400;
     public static final int DO_NOT_SHOW_I = Integer.MIN_VALUE;
@@ -37,15 +41,54 @@ public class VisualFrame extends JFrame {
         add(imageLabel);
         add(debugLabel, BorderLayout.NORTH);
         debugLabel.setEditable(false);
+        debugLabel.setFont(new Font( "Monospaced", Font.PLAIN, 20 ));
         setSize(width, height);
-        debugLabel.setFont(new Font("Lucida", Font.PLAIN, 24));
+        //debugLabel.setFont(new Font("Lucida", Font.PLAIN, 24));
 
     }
 
     public int getLastIndex() {
         return lastIndex;
     }
+public static void main(String[] args) {
+        // Testfall
+        System.out.println(extractVariable("while(a<5)"));           // Output: a
+        System.out.println(extractVariable("while(s.equals(\"hej\"))")); // Output: s
+        System.out.println(extractVariable("while ( ! isRunning )"));    // Output: isRunning
+        System.out.println(extractVariable("while(counter >= 10)"));     // Output: counter
+    }
 
+    /**
+     * Metod för att extrahera den första variabeln i ett while-villkor.
+     */
+    public static String extractVariable(String codeLine) {
+        // 1. Regex för att hitta allt inuti while-parenteserna
+        // while\s* = matchar "while" följt av valfritt antal mellanslag
+        // \((.*)\) = fångar allt inuti de yttersta parenteserna
+        Pattern pattern = Pattern.compile("while\\s*\\((.*)\\)");
+        Matcher matcher = pattern.matcher(codeLine);
+
+        if (matcher.find()) {
+            // Hämta innehållet, t.ex. "a<5" eller " s.equals(...) "
+            String condition = matcher.group(1).trim();
+
+            // 2. Ta bort eventuellt utropstecken i början (för !variabel)
+            if (condition.startsWith("!")) {
+                condition = condition.substring(1).trim();
+            }
+
+            // 3. Dela upp strängen vid första tecknet som INTE är en del av ett namn.
+            // Vi splittrar vid mellanslag, punkt, eller operatorer (<, >, =, !)
+            String[] parts = condition.split("[\\s.<>=!]+");
+
+            // Returnera den första delen, vilket bör vara variabelnamnet
+            if (parts.length > 0) {
+                return parts[0];
+            }
+        }
+
+        return "Ingen variabel hittades";
+    }
     public static String findIndexVariable(String code) {
         //String code = "for (int counter = 0; counter < 20; counter++)";
 
@@ -73,7 +116,7 @@ public class VisualFrame extends JFrame {
 //        System.out.println("retVal = " + retVal);
 //        return retVal;
 //    }
-    public void show(BufferedImage bi, String origCode, int i) {
+    public void show(BufferedImage bi, String origCode, int i, BlockType type) {
         ImageIcon ic = new ImageIcon(bi);
         imageLabel.setIcon(ic);
         lastIndex = i;
@@ -81,8 +124,18 @@ public class VisualFrame extends JFrame {
             origCode = "i";
         }
         if (origCode.contains("(")) {
-            String indexVariable = findIndexVariable(origCode);
-            String code1 = replaceIndexVariable(origCode, i + "");
+            String indexVariable;
+            String code1;
+            if(type==BlockType.FOR){
+               indexVariable = findIndexVariable(origCode);
+               code1 = replaceIndexVariable(origCode, i + "");
+            }
+            else {
+               indexVariable = extractVariable(origCode);
+               code1=replaceSafe(origCode, indexVariable, i+"");
+            }
+            
+            
             String code2 = CodeEvaluator.processCode(origCode, i);
             code1 = indexVariable + ":" + i + "\n"
                     + "Först byter vi ut varabeln med dess värde\n"
@@ -91,6 +144,7 @@ public class VisualFrame extends JFrame {
                     + code2;
             debugLabel.setText(code1);
         } else {
+            System.out.println("i = " + i+", DO_NOT_SHOW_I = " + DO_NOT_SHOW_I);
             if (i != DO_NOT_SHOW_I) {
                 debugLabel.setText(origCode + ": " + i);
             } else {

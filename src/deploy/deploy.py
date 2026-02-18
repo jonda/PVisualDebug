@@ -14,27 +14,29 @@ for filename in os.listdir("."):
     if filename.endswith('.java'):
         shutil.copy(filename, base+"src")
         print(filename)
+
+
 os.chdir("..")
 
-src="dist/PVisual.jar"
-dst=base+"library/PVisual.jar"
+src = "dist/PVisual.jar"
+dst = base+"library/PVisual.jar"
 
-print(os.getcwd())
+print( os.getcwd())
 print("kopierar "+src + " till " + dst)
 print(os.listdir("\\\\SR-Disk-2\\Hem0010\\dahjon\\Documents\\Processing\\libraries\\PVisual/"))
 shutil.copyfile(src,dst)
 
 import zipfile
 
-def zipdir(path, ziph):
-    # ziph is zipfile handle
+def zipdir( path, ziph):
     for root, dirs, files in os.walk(path):
         for file in files:
             ziph.write(os.path.join(root, file).replace("\\","/"))
-os.chdir(base+"/..")
-print(os.getcwd())
 
-zipf = zipfile.ZipFile('PVisual.zip', 'w', zipfile.ZIP_DEFLATED)
+
+os.chdir(base+"/..")
+print( os.getcwd())
+zipf = zipfile.ZipFile( 'PVisual.zip', 'w', zipfile.ZIP_DEFLATED)
 zipdir("PVisual", zipf)
 zipf.close()
 print("--------------------------")
@@ -45,23 +47,24 @@ base=sketchbook+"tools/PVisualTool/"
 os.chdir(origDir)
 print(os.getcwd())
 os.chdir("src")
+
 for filename in os.listdir("."):
     if filename.endswith('.java'):
         shutil.copy(filename, base+"src")
         print(filename)
-os.chdir("..")
 
+
+os.chdir("..")
 src="dist/PVisual.jar"
 dst=base+"tool/PVisualTool.jar"
-
-print(os.getcwd())
+print( os.getcwd() )
 print("kopierar "+src + " till " + dst)
 print(os.listdir("\\\\SR-Disk-2\\Hem0010\\dahjon\\Documents\\Processing\\tools\\PVisualTool/"))
 shutil.copyfile(src,dst)
 
 
 zipf = zipfile.ZipFile('PVisualTool.zip', 'w', zipfile.ZIP_DEFLATED)
-zipdir("PVisualTool", zipf)
+zipdir( "PVisualTool", zipf)
 zipf.close()
 
 
