@@ -136,7 +136,7 @@ public static void main(String[] args) {
             }
             
             
-            String code2 = CodeEvaluator.processCode(origCode, i);
+            String code2 = CodeEvaluator.processCode(origCode,indexVariable ,i);
             code1 = indexVariable + ":" + i + "\n"
                     + "Först byter vi ut varabeln med dess värde\n"
                     + code1
