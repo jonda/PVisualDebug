@@ -94,7 +94,7 @@ public class InsertUtils {
         if (endBrace != -1) {
             int startIndex = getStartOfLine(sb, startBrace);
 
-            String bc = sb.substring(startIndex, endBrace);
+            String bc = sb.substring(startIndex, endBrace+1);
             bc = bc.replace("\n", "\\n");
             bc = bc.replace("\"", "\\\"");
             return bc;
@@ -106,7 +106,7 @@ public class InsertUtils {
     private static int handleBlock(String code, StringBuilder sb, int braceInd) {
         BlockType type = getBlockType(sb, braceInd);
         System.out.println("type = " + type);
-        String indexVariableName = "";
+        String indexVariableName = "";  
         if (type == BlockType.FOR) {
             indexVariableName = VisualFrame.findIndexVariable(code);
         } else if (type == BlockType.WHILE) {
@@ -134,6 +134,7 @@ public class InsertUtils {
                 if (!checkIfAlreadyThere(sb, afterBlockIndex + 3)) {
                     sb.insert(afterBlockIndex, textToInsert);
                 }
+                endBraceIndex+=textToInsert.length();
             }
             System.out.println("endBraceIndex = " + endBraceIndex);
         }

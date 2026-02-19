@@ -12,6 +12,7 @@ import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.swing.BoxLayout;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -19,6 +20,11 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
 
 import processing.core.PApplet;
 
@@ -31,35 +37,58 @@ public class VisualFrame extends JDialog {
     boolean autoMode = false;
 
     JLabel imageLabel = new JLabel("JVisual");
-    JTextArea debugLabel = new JTextArea("i:?");
+    JTextArea debugArea = new JTextArea("i:?");
+    JTextArea origCodeArea = new JTextArea();
+    JTextArea code1Area = new JTextArea();
+    JTextArea code2Area = new JTextArea();
+
     //JButton nextButton = new JButton("Nästa");
-    JPanel upperPanel = new JPanel();
-    
 
 //        JEditTextArea debugLabel = new JEditTextArea(new PdeTextAreaDefaults(),
 //                             new PdeInputHandler());
     int width = 400;
-    int height = 400;
+    int height = 700;
     public static final int DO_NOT_SHOW_I = Integer.MIN_VALUE;
     static int screenWidth = (int) Toolkit.getDefaultToolkit().getScreenSize().getWidth();
     int lastIndex = 0;
+    String lastForBlock = "";
+    int padding = 10;
+
+    public String getLastForBlock() {
+        return lastForBlock;
+    }
 
     public VisualFrame(PApplet par, int delayValue) {
         //setModal(!autoMode);
-        
-        if(delayValue>=0){
+
+        if (delayValue >= 0) {
             autoMode = true;
         }
         setTitle("JVisual");
-        add(imageLabel);
-        add(upperPanel, BorderLayout.NORTH);
-//        if (!autoMode) {
-//            upperPanel.add(nextButton, BorderLayout.NORTH);
-//            nextButton.addActionListener(this::nextButtonPerformed);
-//        }
-        upperPanel.add(debugLabel, BorderLayout.SOUTH);
-        debugLabel.setEditable(false);
-        debugLabel.setFont(new Font("Monospaced", Font.PLAIN, 20));
+        add(imageLabel, BorderLayout.SOUTH);
+        add(debugArea, BorderLayout.NORTH);
+
+        JPanel codePanel = new JPanel();
+        codePanel.setLayout(new BoxLayout(codePanel, BoxLayout.Y_AXIS));
+        debugArea.setBorder(new CompoundBorder(new EmptyBorder(padding,padding,padding,padding),new TitledBorder("Indexvariabel")));
+        origCodeArea.setBorder(new CompoundBorder(new EmptyBorder(padding,padding,padding,padding),new TitledBorder("Loopens kod:")));
+
+//        code1Area.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED),new TitledBorder("Först byter vi ut varabeln med dess värde")));
+        code1Area.setBorder(new CompoundBorder(new EmptyBorder(padding,padding,padding,padding),new TitledBorder("Först byter vi ut varabeln med dess värde")));
+        code2Area.setBorder(new CompoundBorder(new EmptyBorder(padding,padding,padding,padding),new TitledBorder("Och sedan räknar vi ut uttrycket")));
+        codePanel.add(origCodeArea);
+        codePanel.add(code1Area);
+        codePanel.add(code2Area);
+        add(codePanel, BorderLayout.CENTER);
+        origCodeArea.setEditable(false);
+        code1Area.setEditable(false);
+        code2Area.setEditable(false);
+        debugArea.setEditable(false);
+        final Font font = new Font("Monospaced", Font.PLAIN, 20);
+        origCodeArea.setFont(font);
+        code1Area.setFont(font);
+        code2Area.setFont(font);
+        debugArea.setFont(font);
         setSize(width, height);
         setLocation(100, 100);
         //debugLabel.setFont(new Font("Lucida", Font.PLAIN, 24));
@@ -112,6 +141,8 @@ public class VisualFrame extends JDialog {
 
     /**
      * Metod för att extrahera den första variabeln i ett while-villkor.
+     * @param codeLine 
+     * @return 
      */
     public static String extractVariable(String codeLine) {
         // 1. Regex för att hitta allt inuti while-parenteserna
@@ -169,18 +200,25 @@ public class VisualFrame extends JDialog {
 //        System.out.println("retVal = " + retVal);
 //        return retVal;
 //    }
+    
+    //Obs denna funktion kör i en annan tråd
     public void show(BufferedImage bi, String origCode, int i, BlockType type) {
+        System.out.println("-> show origCode = " + origCode);
         setVisible(true);
         ImageIcon ic = new ImageIcon(bi);
-        imageLabel.setIcon(ic);
+        
         lastIndex = i;
         if (origCode == null) {
             origCode = "i";
         }
+        String indexVariable = "";
+        String code1 = "";
+        String code2 = "";
+        String debug = "";
         if (origCode.contains("(")) {
-            String indexVariable;
-            String code1;
+            ;
             if (type == BlockType.FOR) {
+                lastForBlock = origCode;
                 indexVariable = findIndexVariable(origCode);
                 code1 = replaceIndexVariable(origCode, i + "");
             } else {
@@ -188,21 +226,28 @@ public class VisualFrame extends JDialog {
                 code1 = replaceSafe(origCode, indexVariable, i + "");
             }
 
-            String code2 = CodeEvaluator.processCode(origCode, indexVariable, i);
-            code1 = indexVariable + ":" + i + "\n"
-                    + "Först byter vi ut varabeln med dess värde\n"
-                    + code1
-                    + "\n\nOch sedan räknar vi ut uttrycket\n"
-                    + code2;
-            debugLabel.setText(code1);
+            System.out.println("indexVariable: " + indexVariable + "=" + i);
+            System.out.println("code1 = " + code1);
+            code2 = CodeEvaluator.processCode(origCode, indexVariable, i);
+            System.out.println("code2 = " + code2);
+            debug = indexVariable + ":" + i;
+//                    + "\n"
+//                    + code1
+//                    + "\n\n\n"
+//                    + code2;
         } else {
             System.out.println("i = " + i + ", DO_NOT_SHOW_I = " + DO_NOT_SHOW_I);
             if (i != DO_NOT_SHOW_I) {
-                debugLabel.setText(origCode + ": " + i);
+                debugArea.setText(origCode + ": " + i);
             } else {
-                debugLabel.setText("");
+                debugArea.setText("");
             }
         }
+        
+        SwingUtilities.invokeLater(new ShowCode(debug, origCode,code1, code2,ic));
+//            debugArea.setText(debug);
+//            code1Area.setText(code1);
+//            code2Area.setText(code2);
 
 //        f.setLocation(pVisual.frameX, pVisual.frameY);
 //        pVisual.frameX += width;
@@ -210,9 +255,39 @@ public class VisualFrame extends JDialog {
 //            pVisual.frameX = 0;
 //            pVisual.frameY += height;
 //        }
-        pack();
+        
         if (!autoMode) {
             waitForNextButton();
+        }
+    }
+    private class ShowCode implements Runnable {
+
+        String debug;
+        String origCode;
+        String code1;
+        String code2;
+        ImageIcon ic;
+
+        public ShowCode(String debug, String origCode, String code1, String code2, ImageIcon ic) {
+            this.debug = debug;
+            this.origCode = origCode;
+            this.code1 = code1;
+            this.code2 = code2;
+            this.ic = ic;
+        }
+
+
+
+
+
+        @Override
+        public void run() {
+            debugArea.setText(debug);
+            origCodeArea.setText(origCode);
+            code1Area.setText(code1);
+            code2Area.setText(code2);  
+            imageLabel.setIcon(ic); 
+            pack();
         }
     }
 

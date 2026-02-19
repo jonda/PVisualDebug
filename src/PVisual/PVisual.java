@@ -33,26 +33,26 @@ public class PVisual {
 
     }
 
-    public void show() {
-        show(VisualFrame.DO_NOT_SHOW_I);
+//    public void show() {
+//        show(VisualFrame.DO_NOT_SHOW_I);
+//
+//    }
 
-    }
+//    public void show(int i) {
+//        String code = getCode();
+//        show(code, i);
+//
+//    }
 
-    public void show(int i) {
-        String code = getCode();
-        show(code, i);
-
-    }
-
-    public void show(int i, BlockType type) {
-        String code = getCode();
-        show(code, i, type);
-
-    }
+//    public void show(int i, BlockType type) {
+//        String code = getCode();
+//        show(code, i, type);
+//
+//    }
 
     public void showAfterFor() {
-        String code = getCode();
-        show(code, vf.getLastIndex() + 1);
+        //String code = getCode();
+        show(vf.getLastForBlock(), vf.getLastIndex() + 1);
         System.out.println("Väntar nu: " + delayValue);
     }
 
@@ -89,5 +89,5 @@ public class PVisual {
         }
 
     }
-
+    
 }
