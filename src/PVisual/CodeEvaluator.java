@@ -15,18 +15,20 @@ import java.util.regex.Pattern;
 
 public class CodeEvaluator {
 public static void main(String[] args) {
-        String rawCode = 
-            "// Test av For-loop\n" +
-            "for (int i=0; i < 20; i++) {\n" +
-            "  circle(20*i, 100, 10);\n" +
-            "}\n" +
-            "\n" +
-            "// Test av While-loop\n" +
-            "int i = 0;\n" +
-            "while (i < 10) {\n" +
-            "  if (i == 5) println(\"Mitt i prick\");\n" +
-            "  i++;\n" +
-            "}";
+        String rawCode = " if (i == 5){ "
+                + "println(\\\"Mitt i prick\\\");\\n\""
+                + "}\n";
+//            "// Test av For-loop\n" +
+//            "for (int i=0; i < 20; i++) {\n" +
+//            "  circle(20*i, 100, 10);\n" +
+//            "}\n" +
+//            "\n" +
+//            "// Test av While-loop\n" +
+//            "int i = 0;\n" +
+//            "while (i < 10) {\n" +
+//            "  if (i == 5) println(\"Mitt i prick\");\n" +
+//            "  i++;\n" +
+//            "}";
 
         int val = 5; // Vi sätter i = 5
 

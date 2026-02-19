@@ -69,11 +69,13 @@ public class InsertUtils {
             return BlockType.FOR;
         } else if (line.startsWith("while")) {
             return BlockType.WHILE;
+        } else if (line.startsWith("if")) {
+            return BlockType.IF;
         }
         return BlockType.UNKNOWN;
     }
 
-    public static String insertPVisualFunctions(String code,int delayValue) {
+    public static String insertPVisualFunctions(String code, int delayValue) {
         StringBuilder sb = new StringBuilder(code);
         insertImport(sb);
         insertCreatePv(sb, delayValue);
@@ -94,7 +96,7 @@ public class InsertUtils {
         if (endBrace != -1) {
             int startIndex = getStartOfLine(sb, startBrace);
 
-            String bc = sb.substring(startIndex, endBrace+1);
+            String bc = sb.substring(startIndex, endBrace + 1);
             bc = bc.replace("\n", "\\n");
             bc = bc.replace("\"", "\\\"");
             return bc;
@@ -106,17 +108,19 @@ public class InsertUtils {
     private static int handleBlock(String code, StringBuilder sb, int braceInd) {
         BlockType type = getBlockType(sb, braceInd);
         System.out.println("type = " + type);
-        String indexVariableName = "";  
-        if (type == BlockType.FOR) {
-            indexVariableName = VisualFrame.findIndexVariable(code);
-        } else if (type == BlockType.WHILE) {
-            indexVariableName = VisualFrame.extractVariable(code);
-        }
+        String indexVariableName = "";
+
         //sb.insert(PrevRowInd+1, "pv.show();\n");
         int endBraceIndex = sb.indexOf("}", braceInd);
         System.out.println("braceInd = " + braceInd + ", endBraceIndex = " + endBraceIndex);
         if (endBraceIndex != -1) {
             String blockCode = getEscapedBlockCode(sb, braceInd, endBraceIndex);
+            if (type == BlockType.FOR) {
+                indexVariableName = VisualFrame.findIndexVariable(blockCode);
+            } else if (type == BlockType.WHILE || type == BlockType.IF) {
+                
+                indexVariableName = VisualFrame.extractVariable(blockCode);
+            }
             System.out.println("blockCode = '" + blockCode + "' ::end blockCode");
             String textToInsert = "  pv.show(\"" + blockCode + "\", " + indexVariableName + ", BlockType." + type.name() + ");" + REMOVE_MESSAGE;
             final int lastInBlockIndex = getStartOfLine(sb, endBraceIndex);
@@ -125,7 +129,7 @@ public class InsertUtils {
                 sb.insert(lastInBlockIndex, textToInsert);
                 endBraceIndex += textToInsert.length();
             }
-            if (type == BlockType.FOR || type == BlockType.WHILE) {
+            if (type == BlockType.FOR || type == BlockType.WHILE || type == BlockType.IF) {
                 if (type == BlockType.FOR) {
                     textToInsert = "  pv.showAfterFor();" + REMOVE_MESSAGE;
                 }
@@ -134,7 +138,7 @@ public class InsertUtils {
                 if (!checkIfAlreadyThere(sb, afterBlockIndex + 3)) {
                     sb.insert(afterBlockIndex, textToInsert);
                 }
-                endBraceIndex+=textToInsert.length();
+                endBraceIndex += textToInsert.length();
             }
             System.out.println("endBraceIndex = " + endBraceIndex);
         }
@@ -157,18 +161,40 @@ public class InsertUtils {
     }
 
     public static void main(String[] args) {
-        String code = "size(400, 400);\n"
-                + "fill(255, 0, 0);   \n"
-                + "for (int i=0; i < 10; i++) {\n"
-                + "  circle(20*i, 20*i, 20+10*i);\n"
-                + "}\n"
-                + "\n"
-                + "int a = 14;\n"
-                + "fill(0,0,255);\n"
-                + "while(a>5){\n"
-                + "   square(30*a,30*a,30);\n"
-                + "   a--;\n"
-                + "}";
+        String code = "size(400, 400);\n" +
+"fill(255, 0, 0);   \n" +
+"for (int i=0; i < 10; i++) {\n" +
+"  circle(20*i, 20*i, 20+10*i);\n" +
+"}\n" +
+"\n" +
+"int a = 14;\n" +
+"fill(0,0,255);\n" +
+"while(a>5){\n" +
+"   square(30*a,30*a,30);\n" +
+"   a--;\n" +
+"}\n" +
+"int b = 20;\n" +
+"if( b > 3 ){\n" +
+"   square(20*b,20*b,10*b);\n" +
+"   b--;\n" +
+"}\n" +
+"";
+//        size(400, 400);\n"
+//                + "fill(255, 0, 0);   \n"
+//                + "for (int i=0; i < 10; i++) {\n"
+//                + "  circle(20*i, 20*i, 20+10*i);\n"
+//                + "}\n"
+//                + "\n"
+//                + "int a = 14;\n"
+//                + "fill(0,0,255);\n"
+//                + "while(a>5){\n"
+//                + "   square(30*a,30*a,30);\n"
+//                + "   a--;\n"
+//                + "}\n"
+//                + "if(b>3){\n"
+//                + "   square(20*b,20*b,30);\n"
+//                + "   b--;\n"
+//                + "}\n";
         //      String code = "import PVisual.*;\n" + "PVisual pv = new PVisual(this);\n" + "size(400, 400);\n" + "fill(255, 0, 0);   \n" + "for (int i=0; i < 20; i++) {\n" + "  delay(500);\n" + "  circle(20*i, 20*i, 20+10*i);\n" + "}\n" + "\n" + "";
         String res = insertPVisualFunctions(code, 500);
         System.out.println("res = " + res);
@@ -196,8 +222,8 @@ public class InsertUtils {
                 System.out.println("insertCreatePv: Hittade ingen import");
             }
             int nextLine = getStartOfNextLine(sb, index);
-            String CREATE_PV_LINE = "PVisual pv = new PVisual(this, "+delayValue+");" + REMOVE_MESSAGE;
-            
+            String CREATE_PV_LINE = "PVisual pv = new PVisual(this, " + delayValue + ");" + REMOVE_MESSAGE;
+
             sb.insert(nextLine, CREATE_PV_LINE);
         }
     }

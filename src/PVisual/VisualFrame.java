@@ -148,17 +148,18 @@ public class VisualFrame extends JDialog {
         // 1. Regex för att hitta allt inuti while-parenteserna
         // while\s* = matchar "while" följt av valfritt antal mellanslag
         // \((.*)\) = fångar allt inuti de yttersta parenteserna
-        Pattern pattern = Pattern.compile("while\\s*\\((.*)\\)");
+        Pattern pattern = Pattern.compile("(while|if)\\s*\\((.*)\\)");
         Matcher matcher = pattern.matcher(codeLine);
 
         if (matcher.find()) {
             // Hämta innehållet, t.ex. "a<5" eller " s.equals(...) "
-            String condition = matcher.group(1).trim();
+            String condition = matcher.group(2).trim();
 
             // 2. Ta bort eventuellt utropstecken i början (för !variabel)
             if (condition.startsWith("!")) {
                 condition = condition.substring(1).trim();
             }
+            //System.out.println("extractVariable-> condition = " + condition);
 
             // 3. Dela upp strängen vid första tecknet som INTE är en del av ett namn.
             // Vi splittrar vid mellanslag, punkt, eller operatorer (<, >, =, !)
@@ -372,4 +373,5 @@ public class VisualFrame extends JDialog {
         }
         return sb.toString();
     }
+
 }
