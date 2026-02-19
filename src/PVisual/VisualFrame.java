@@ -355,23 +355,26 @@ public class VisualFrame extends JDialog {
     }
 
     // Hjälpmetod: Byter ut variabeln men undviker textsträngar ("...")
-    private static String replaceSafe(String text, String targetVar, String replacement) {
-        String[] parts = text.split("\"", -1);
-        StringBuilder sb = new StringBuilder();
+private static String replaceSafe(String text, String targetVar, String replacement) {
+    String[] parts = text.split("\"", -1);
+    StringBuilder sb = new StringBuilder();
 
-        for (int j = 0; j < parts.length; j++) {
-            // Jämna index är kod, udda index är textsträngar
-            if (j % 2 == 0) {
-                // Använd Word Boundary (\b) för att bara byta "i", inte "int"
-                String regex = "\\b" + targetVar + "\\b";
-                parts[j] = parts[j].replaceAll(regex, replacement);
-            }
-            sb.append(parts[j]);
-            if (j < parts.length - 1) {
-                sb.append("\"");
-            }
+    for (int j = 0; j < parts.length; j++) {
+        if (j % 2 == 0) {
+            // Förklaring av Regex:
+            // (?<!\+\+|--)\b          <- Får inte föregås av ++ eller --
+            // \btargetVar\b           <- Själva variabelnamnet
+            // (?!(\s*(\+\+|--|=)))    <- Får inte följas av ++, -- eller = (med valfritt mellanrum)
+            String regex = "(?<!\\+\\+|--)\\b" + targetVar + "\\b(?!(\\s*(\\+\\+|--|=)))";
+            
+            parts[j] = parts[j].replaceAll(regex, replacement);
         }
-        return sb.toString();
+        sb.append(parts[j]);
+        if (j < parts.length - 1) {
+            sb.append("\"");
+        }
     }
+    return sb.toString();
+}
 
 }
