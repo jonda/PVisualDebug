@@ -8,6 +8,27 @@ package PVisual;
  *
  * @author dahjon
  */
- public enum BlockType {
-        FOR, WHILE, IF, FUNCTION, UNKNOWN
-    };
+public enum BlockType {
+    FOR("for-loop", "Indexvariabel"),
+    WHILE("while-loop", "Jämförelsevariabel"),
+    IF("if-sats", "Jämförelsevariabel"),
+    FUNCTION("Funktion", "------"), UNKNOWN("Okänt block", "----");
+
+    private final String fullName;
+    private final String VariabelBeteckning;
+
+    private BlockType(String name, String VariabelBeteckning) {
+        this.fullName = name;
+        this.VariabelBeteckning = VariabelBeteckning;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public String getVariabelBeteckning() {
+        return VariabelBeteckning;
+    }
+
+    
+};

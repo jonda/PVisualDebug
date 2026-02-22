@@ -21,7 +21,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -43,7 +42,6 @@ public class VisualFrame extends JDialog {
     JTextArea code2Area = new JTextArea();
 
     //JButton nextButton = new JButton("Nästa");
-
 //        JEditTextArea debugLabel = new JEditTextArea(new PdeTextAreaDefaults(),
 //                             new PdeInputHandler());
     int width = 400;
@@ -53,6 +51,8 @@ public class VisualFrame extends JDialog {
     int lastIndex = 0;
     String lastForBlock = "";
     int padding = 10;
+    final TitledBorder origCodeBorder = new TitledBorder("Loopens kod:");
+    final TitledBorder indexVariabelBorder = new TitledBorder("Indexvariabel");
 
     public String getLastForBlock() {
         return lastForBlock;
@@ -70,12 +70,12 @@ public class VisualFrame extends JDialog {
 
         JPanel codePanel = new JPanel();
         codePanel.setLayout(new BoxLayout(codePanel, BoxLayout.Y_AXIS));
-        debugArea.setBorder(new CompoundBorder(new EmptyBorder(padding,padding,padding,padding),new TitledBorder("Indexvariabel")));
-        origCodeArea.setBorder(new CompoundBorder(new EmptyBorder(padding,padding,padding,padding),new TitledBorder("Loopens kod:")));
+        debugArea.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), indexVariabelBorder));
+        origCodeArea.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), origCodeBorder));
 
 //        code1Area.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED),new TitledBorder("Först byter vi ut varabeln med dess värde")));
-        code1Area.setBorder(new CompoundBorder(new EmptyBorder(padding,padding,padding,padding),new TitledBorder("Först byter vi ut varabeln med dess värde")));
-        code2Area.setBorder(new CompoundBorder(new EmptyBorder(padding,padding,padding,padding),new TitledBorder("Och sedan räknar vi ut uttrycket")));
+        code1Area.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), new TitledBorder("Först byter vi ut varabeln med dess innehåll")));
+        code2Area.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), new TitledBorder("Och sedan räknar vi ut uttrycket")));
         codePanel.add(origCodeArea);
         codePanel.add(code1Area);
         codePanel.add(code2Area);
@@ -131,48 +131,81 @@ public class VisualFrame extends JDialog {
         return lastIndex;
     }
 
-    public static void main(String[] args) {
-        // Testfall
-        System.out.println(extractVariable("while(a<5)"));           // Output: a
-        System.out.println(extractVariable("while(s.equals(\"hej\"))")); // Output: s
-        System.out.println(extractVariable("while ( ! isRunning )"));    // Output: isRunning
-        System.out.println(extractVariable("while(counter >= 10)"));     // Output: counter
+   public static void main(String[] args) {
+        // --- Testfall ---
+        
+        // Krav 1: Ska fungera på både if och while
+        System.out.println(extractVariable("if(a < 5)"));                  // Output: a
+        System.out.println(extractVariable("while ( ! isRunning )"));      // Output: isRunning
+        
+        // Krav 2: Variabeln på höger sida
+        System.out.println(extractVariable("if(5 < b)"));                  // Output: b
+        
+        // Komplexa fall med metoder och strängar
+        System.out.println(extractVariable("while(\"hej\".equals(s))"));   // Output: s
+        System.out.println(extractVariable("if(true == minVariabel)"));    // Output: minVariabel
+        System.out.println(extractVariable("if (10.5 >= counter)"));       // Output: counter
     }
 
     /**
-     * Metod för att extrahera den första variabeln i ett while-villkor.
-     * @param codeLine 
-     * @return 
+     * Metod för att extrahera den första variabeln i ett if- eller while-villkor.
      */
     public static String extractVariable(String codeLine) {
-        // 1. Regex för att hitta allt inuti while-parenteserna
-        // while\s* = matchar "while" följt av valfritt antal mellanslag
-        // \((.*)\) = fångar allt inuti de yttersta parenteserna
-        Pattern pattern = Pattern.compile("(while|if)\\s*\\((.*)\\)");
-        Matcher matcher = pattern.matcher(codeLine);
+        // 1. Regex för att hitta både 'while' och 'if'
+        // (?:while|if) matchar antingen "while" eller "if" utan att spara själva ordet i en egen grupp.
+        Pattern statementPattern = Pattern.compile("(?:while|if)\\s*\\((.*)\\)");
+        Matcher statementMatcher = statementPattern.matcher(codeLine);
 
-        if (matcher.find()) {
-            // Hämta innehållet, t.ex. "a<5" eller " s.equals(...) "
-            String condition = matcher.group(2).trim();
+        if (statementMatcher.find()) {
+            // Hämta hela villkoret inuti parenteserna
+            String condition = statementMatcher.group(1).trim();
 
-            // 2. Ta bort eventuellt utropstecken i början (för !variabel)
-            if (condition.startsWith("!")) {
-                condition = condition.substring(1).trim();
-            }
-            //System.out.println("extractVariable-> condition = " + condition);
+            // 2. Rensa bort all text inuti citattecken ("...") 
+            // Detta förhindrar att vi råkar tro att ett ord inuti en sträng är en variabel.
+            condition = condition.replaceAll("\".*?\"", "");
 
-            // 3. Dela upp strängen vid första tecknet som INTE är en del av ett namn.
-            // Vi splittrar vid mellanslag, punkt, eller operatorer (<, >, =, !)
-            String[] parts = condition.split("[\\s.<>=!]+");
+            // 3. Regex för att hitta giltiga Java-namn (variabler/metoder)
+            // [a-zA-Z_$] = Måste börja med bokstav, _ eller $
+            // [a-zA-Z0-9_$]* = Får följas av noll eller fler bokstäver, siffror, _ eller $
+            Pattern idPattern = Pattern.compile("[a-zA-Z_$][a-zA-Z0-9_$]*");
+            Matcher idMatcher = idPattern.matcher(condition);
 
-            // Returnera den första delen, vilket bör vara variabelnamnet
-            if (parts.length > 0) {
-                return parts[0];
+            while (idMatcher.find()) {
+                String match = idMatcher.group();
+
+                // 4. Filtrera bort boolean-värden och null
+                if (match.equals("true") || match.equals("false") || match.equals("null")) {
+                    continue;
+                }
+
+                // 5. Kolla om ordet följs av en vänsterparentes '('
+                // Om det gör det, är det ett metodanrop (t.ex. 'equals'), inte en variabel.
+                int end = idMatcher.end();
+                boolean isMethodCall = false;
+                for (int i = end; i < condition.length(); i++) {
+                    char c = condition.charAt(i);
+                    if (c == '(') {
+                        isMethodCall = true;
+                        break;
+                    } else if (!Character.isWhitespace(c)) {
+                        // Vi hittade ett annat tecken (t.ex. '.' eller '==') innan en eventuell parentes
+                        break;
+                    }
+                }
+
+                // Om det var en metod, hoppa till nästa matchning i while-loopen
+                if (isMethodCall) {
+                    continue; 
+                }
+
+                // Har vi passerat alla filter ovan? Då har vi hittat vår variabel!
+                return match;
             }
         }
 
         return "Ingen variabel hittades";
     }
+
 
     public static String findIndexVariable(String code) {
         //String code = "for (int counter = 0; counter < 20; counter++)";
@@ -201,13 +234,12 @@ public class VisualFrame extends JDialog {
 //        System.out.println("retVal = " + retVal);
 //        return retVal;
 //    }
-    
     //Obs denna funktion kör i en annan tråd
     public void show(BufferedImage bi, String origCode, int i, BlockType type) {
         System.out.println("-> show origCode = " + origCode);
         setVisible(true);
         ImageIcon ic = new ImageIcon(bi);
-        
+
         lastIndex = i;
         if (origCode == null) {
             origCode = "i";
@@ -226,7 +258,8 @@ public class VisualFrame extends JDialog {
                 indexVariable = extractVariable(origCode);
                 code1 = replaceSafe(origCode, indexVariable, i + "");
             }
-
+            indexVariabelBorder.setTitle(type.getVariabelBeteckning());
+            origCodeBorder.setTitle(type.getFullName() + "ens kod");
             System.out.println("indexVariable: " + indexVariable + "=" + i);
             System.out.println("code1 = " + code1);
             code2 = CodeEvaluator.processCode(origCode, indexVariable, i);
@@ -244,8 +277,8 @@ public class VisualFrame extends JDialog {
                 debugArea.setText("");
             }
         }
-        
-        SwingUtilities.invokeLater(new ShowCode(debug, origCode,code1, code2,ic));
+
+        SwingUtilities.invokeLater(new ShowCode(debug, origCode, code1, code2, ic));
 //            debugArea.setText(debug);
 //            code1Area.setText(code1);
 //            code2Area.setText(code2);
@@ -256,11 +289,11 @@ public class VisualFrame extends JDialog {
 //            pVisual.frameX = 0;
 //            pVisual.frameY += height;
 //        }
-        
         if (!autoMode) {
             waitForNextButton();
         }
     }
+
     private class ShowCode implements Runnable {
 
         String debug;
@@ -277,17 +310,13 @@ public class VisualFrame extends JDialog {
             this.ic = ic;
         }
 
-
-
-
-
         @Override
         public void run() {
             debugArea.setText(debug);
             origCodeArea.setText(origCode);
             code1Area.setText(code1);
-            code2Area.setText(code2);  
-            imageLabel.setIcon(ic); 
+            code2Area.setText(code2);
+            imageLabel.setIcon(ic);
             pack();
         }
     }
@@ -355,26 +384,26 @@ public class VisualFrame extends JDialog {
     }
 
     // Hjälpmetod: Byter ut variabeln men undviker textsträngar ("...")
-private static String replaceSafe(String text, String targetVar, String replacement) {
-    String[] parts = text.split("\"", -1);
-    StringBuilder sb = new StringBuilder();
+    private static String replaceSafe(String text, String targetVar, String replacement) {
+        String[] parts = text.split("\"", -1);
+        StringBuilder sb = new StringBuilder();
 
-    for (int j = 0; j < parts.length; j++) {
-        if (j % 2 == 0) {
-            // Förklaring av Regex:
-            // (?<!\+\+|--)\b          <- Får inte föregås av ++ eller --
-            // \btargetVar\b           <- Själva variabelnamnet
-            // (?!(\s*(\+\+|--|=)))    <- Får inte följas av ++, -- eller = (med valfritt mellanrum)
-            String regex = "(?<!\\+\\+|--)\\b" + targetVar + "\\b(?!(\\s*(\\+\\+|--|=)))";
-            
-            parts[j] = parts[j].replaceAll(regex, replacement);
+        for (int j = 0; j < parts.length; j++) {
+            if (j % 2 == 0) {
+                // Förklaring av Regex:
+                // (?<!\+\+|--)\b          <- Får inte föregås av ++ eller --
+                // \btargetVar\b           <- Själva variabelnamnet
+                // (?!(\s*(\+\+|--|=)))    <- Får inte följas av ++, -- eller = (med valfritt mellanrum)
+                String regex = "(?<!\\+\\+|--)\\b" + targetVar + "\\b(?!(\\s*(\\+\\+|--|=)))";
+
+                parts[j] = parts[j].replaceAll(regex, replacement);
+            }
+            sb.append(parts[j]);
+            if (j < parts.length - 1) {
+                sb.append("\"");
+            }
         }
-        sb.append(parts[j]);
-        if (j < parts.length - 1) {
-            sb.append("\"");
-        }
+        return sb.toString();
     }
-    return sb.toString();
-}
 
 }
