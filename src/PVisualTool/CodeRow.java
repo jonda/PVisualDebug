@@ -21,17 +21,21 @@ public class CodeRow {
     private String row;
 
     private TempVarsAndCodeLine tempVarsAndCode;
-    private ArrayList<CodeRowVar> rowGlobalVars = new ArrayList<>();
-    private ArrayList<CodeRowVar> rowBlockVars = new ArrayList<>();
+    //private ArrayList<ArrayList<CodeRowVar>> rowGlobalVars = new ArrayList<>();
+    private ArrayList<ArrayList<CodeRowVar>> rowVars = new ArrayList<>();
     int blockLevel;
     private BlockType blockType = BlockType.UNKNOWN;
     private boolean meaningLess = false;
     private final int rowNr;
 
-    public CodeRow(int rowNr, int blockLevel, String row, ArrayList<CodeRowVar> prevRowGlobalVars, ArrayList<CodeRowVar> prevRowBlockVars) {
+    public CodeRow(int rowNr, int blockLevelIn, String row, ArrayList<ArrayList<CodeRowVar>> rowVarsIn) {
         this.rowNr = rowNr;
-        this.blockLevel = blockLevel;
+        this.blockLevel = blockLevelIn;
+        this.rowVars.addAll(rowVarsIn);
+        ArrayList<CodeRowVar> thisRowVars = rowVars.get(rowVars.size() - 1);
+        rowVars.remove(rowVars.size() - 1);
         System.out.println("->CodeRow---------------------------------------------------");
+        System.out.println("row = " + row);
         this.row = row;
         String rowTr = row.trim();
         if (rowTr.startsWith("//")
@@ -41,40 +45,71 @@ public class CodeRow {
             System.out.println("rad: " + rowNr + " är meningslös");
             meaningLess = true;
         }
-        if (prevRowBlockVars == null) {
-            prevRowBlockVars = new ArrayList<>();
-        }
-        if (prevRowGlobalVars == null) {
-            prevRowGlobalVars = new ArrayList<>();
-        }
-        this.rowGlobalVars.addAll(prevRowGlobalVars);
-        System.out.println("CodeRow efter addAll rowGlobalVars = " + rowGlobalVars);
+//        if (prevRowBlockVars == null) {
+//            prevRowBlockVars = new ArrayList<>();
+//        }
+//        if (prevRowGlobalVars == null) {
+//            prevRowGlobalVars = new ArrayList<>();
+//        }
+//        this.rowGlobalVars.addAll(prevRowGlobalVars);
+        System.out.println("CodeRow rowVars = " + rowVars);
+        System.out.println("CodeRow thisRowVars = " + thisRowVars);
 
-        System.out.println("CodeRow efter addAll rowBlockVars = " + rowBlockVars);
-        if (blockStart()) {
-            blockLevel++;
-//            blockType = InsertUtils.getBlockType(new StringBuilder(row), 0);
-//            if (blockType == BlockType.FOR) {
-//                rowBlockVars.add(new CodeRowVar("int", VisualFrame.extractVariable(row), "NULL"));
-//            }
-        }
+        //System.out.println("CodeRow efter addAll rowBlockVars = " + rowVars);
         if (blockEnd()) {
-            blockLevel--;
-            System.out.println("Block end lägger inte till block vars");
-        } else {
-            System.out.println("CodeRow före rowBlockVars = " + rowBlockVars);
-            this.rowBlockVars.addAll(prevRowBlockVars);
+
+            this.blockLevel--;
+            //rowVars.remove(rowVars.size() - 1);
+            System.out.println("Block end blockLevel: " + blockLevel + ",(rowVars.size()-1 ) =  " + (rowVars.size() - 1));
+        } //        else {
+        else {
+            rowVars.add(new ArrayList<CodeRowVar>(thisRowVars));
+
         }
-        if (blockLevel == 0) {
-            addLocalVars(row, blockLevel, rowGlobalVars);
-        } else {
-            addLocalVars(row, blockLevel, rowBlockVars);
+        if (blockStart()) {
+            this.blockLevel++;
+//            blockType = InsertUtils.getBlockType(new StringBuilder(row), 0);
+
+            if ((rowVars.size() - 1) < blockLevel) {
+                rowVars.add(new ArrayList<CodeRowVar>());
+                System.out.println("la till en rad (rowVars.size()-1 ) =  (" + (rowVars.size() - 1));
+
+            }
+//            String indexVariable = PVUtils.findIndexVariable(row);
+//            if(!row.isBlank()){
+//           
+//                rowVars.get(blockLevel).add(new CodeRowVar("int", indexVariable, "NULL"));
+//                blockType = BlockType.FOR;
+//                
+//            }
+
+            System.out.println("Block start blockLevel: " + blockLevel + ",(rowVars.size()-1 ) =  " + (rowVars.size() - 1));
+            //            System.out.println("CodeRow före rowBlockVars = " + rowVars);
+            //        }
+
+            ArrayList<CodeRowVar> funkVars = PVUtils.getFunctionParameters(this.row);
+            if (funkVars != null) {
+                blockType = BlockType.FUNCTION;
+                System.out.println("Detta är en funktion!");
+                rowVars.get(blockLevel).addAll(funkVars);
+            } else {
+                System.out.println("(rowVars.size()-1 < blockLevel =  (" + (rowVars.size() - 1) + " < " + blockLevel + ")");
+
+            }
         }
-        System.out.println("CodeRow efter addLocalVars(); rowBlockVars = " + rowBlockVars);
+        
+        addVars(row, blockLevel, rowVars.get(blockLevel));
+
+        System.out.println("CodeRow efter addLocalVars(); rowBlockVars = " + rowVars);
         ExpressionExtractor extractor = new ExpressionExtractor();
 
         tempVarsAndCode = extractor.extractExpressions(row, rowNr);
+        System.out.println("CodeRow sist rowVars = " + rowVars);
 
+    }
+
+    boolean funcRow() {
+        return blockType == BlockType.FUNCTION;
     }
 
     boolean blockStart() {
@@ -125,9 +160,14 @@ public class CodeRow {
     }
 
     public String getRowWithInsertedOrigVariables() {
+        // Flatten the list of variables, giving priority to inner scopes.
         List<CodeRowVar> allVars = new ArrayList<>();
-        allVars.addAll(rowBlockVars);
-        allVars.addAll(rowGlobalVars);
+        // Iterate from the current block level downwards to handle variable shadowing correctly.
+        for (int i = this.blockLevel; i >= 0; i--) {
+            if (i < rowVars.size()) {
+                allVars.addAll(rowVars.get(i));
+            }
+        }
 
         String assignedVar = null;
         String[] parts = row.split("=");
@@ -205,8 +245,8 @@ public class CodeRow {
         return resultString.replace("\n", "\\n").replace("\"", "\\\"");
     }
 
-    public static void addLocalVars(String row, int blockLevel, ArrayList<CodeRowVar> rowBlockVars) {
-        String varName = VisualFrame.findIndexVariable(row);
+    public static void addVars(String row, int blockLevel, ArrayList<CodeRowVar> rowBlockVars) {
+        String varName = PVUtils.findIndexVariable(row);
         if (!varName.isEmpty()) {
             CodeRowVar newVar = new CodeRowVar(CodeRowVar.INDEXVARIABLE, varName, "");
 
@@ -234,16 +274,15 @@ public class CodeRow {
         }
     }
 
-    String getDebugCode() {
+    String getDebugCode(boolean funcMode) {
         String ret;
-        if (meaningLess) {
-            ret = row;
+        if (meaningLess || (funcMode && blockLevel == 0)) {
+            ret = row + "//tom  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n";
 
         } else {
             ret = getExtraLines()
-                    +row
-                    + getShowLine()
-                     ;
+                    + row   //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
+                    + getShowLine();
         }
         return ret;
     }
@@ -256,35 +295,18 @@ public class CodeRow {
         return rowNr;
     }
 
-    public ArrayList<CodeRowVar> getRowGlobalVars() {
-        return rowGlobalVars;
-    }
-
-    public ArrayList<CodeRowVar> getRowBlockVars() {
-        return rowBlockVars;
+    public ArrayList<ArrayList<CodeRowVar>> getRowVars() {
+        return rowVars;
     }
 
     String getVariablesString() {
-        System.out.println("rowGlobalVars = " + rowGlobalVars);
-        System.out.println("rowBlockVars = " + rowBlockVars);
         StringBuilder s = new StringBuilder();
-        for (int i = 0; i < rowGlobalVars.size(); i++) {
-            CodeRowVar v = rowGlobalVars.get(i);
-            addVarToShowString(s, v.getshowRow());
-
+        for (ArrayList<CodeRowVar> varList : rowVars) {
+            for (CodeRowVar v : varList) {
+                addVarToShowString(s, v.getshowRow());
+            }
         }
-        System.out.println("getVariablesString efter lagt till globals = " + s);
-        for (int i = 0; i < rowBlockVars.size(); i++) {
-            CodeRowVar v = rowBlockVars.get(i);
-            addVarToShowString(s, v.getshowRow());
-            System.out.println("inniti loop s = " + s);
-        }
-//        if(s.length()>=2){
-//            s = s.substring(0,s.length()-2);
-//        }
-        //System.out.println("getVariablesString näst sist = " + s);
 
-        //s.append("+\"");
         if (s.isEmpty()) {
             s.append("\"\"");
         }
@@ -314,10 +336,11 @@ public class CodeRow {
         //String s = "int apa = 2;";
         //String s = "circle(r*i, 30,30);";
         String s = "a = int(JOptionPane.showInputDialog(\"ange a\"));";
-        final ArrayList<CodeRowVar> vars = new ArrayList<>();
-        vars.add(new CodeRowVar("int", "i", "20"));
-        CodeRow r = new CodeRow(1,0, s, vars, null);
-        System.out.println(r.getDebugCode());
+        ArrayList<ArrayList<CodeRowVar>> vars = new ArrayList<>();
+        vars.add(new ArrayList<>());
+        vars.get(0).add(new CodeRowVar("int", "i", "20"));
+        CodeRow r = new CodeRow(1, 0, s, vars);
+        System.out.println(r.getDebugCode(false).toString());
 
     }
 }

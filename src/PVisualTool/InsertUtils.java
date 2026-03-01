@@ -112,46 +112,46 @@ public class InsertUtils {
         return "";
 
     }
-
-    private static int handleBlock(String code, StringBuilder sb, int braceInd) {
-        BlockType type = getBlockType(sb, braceInd);
-        System.out.println("type = " + type);
-        String indexVariableName = "";
-
-        //sb.insert(PrevRowInd+1, "pv.show();\n");
-        int endBraceIndex = sb.indexOf("}", braceInd);
-        System.out.println("braceInd = " + braceInd + ", endBraceIndex = " + endBraceIndex);
-        if (endBraceIndex != -1) {
-            String blockCode = getEscapedBlockCode(sb, braceInd, endBraceIndex);
-            if (type == BlockType.FOR) {
-                indexVariableName = VisualFrame.findIndexVariable(blockCode);
-            } else if (type == BlockType.WHILE || type == BlockType.IF) {
-                
-                indexVariableName = VisualFrame.extractVariable(blockCode);
-            }
-            System.out.println("blockCode = '" + blockCode + "' ::end blockCode");
-            String textToInsert = "  pv.show(\"" + blockCode + "\", " + indexVariableName + ", BlockType." + type.name() + ");" + REMOVE_MESSAGE;
-            final int lastInBlockIndex = getStartOfLine(sb, endBraceIndex);
-
-            if (!checkIfAlreadyThere(sb, lastInBlockIndex)) {
-                sb.insert(lastInBlockIndex, textToInsert);
-                endBraceIndex += textToInsert.length();
-            }
-            if (type == BlockType.FOR || type == BlockType.WHILE || type == BlockType.IF) {
-                if (type == BlockType.FOR) {
-                    textToInsert = "  pv.showAfterFor();" + REMOVE_MESSAGE;
-                }
-                final int afterBlockIndex = getStartOfNextLine(sb, endBraceIndex);
-                System.out.println("afterBlockIndex = " + afterBlockIndex);
-                if (!checkIfAlreadyThere(sb, afterBlockIndex + 3)) {
-                    sb.insert(afterBlockIndex, textToInsert);
-                }
-                endBraceIndex += textToInsert.length();
-            }
-            System.out.println("endBraceIndex = " + endBraceIndex);
-        }
-        return endBraceIndex;
-    }
+//
+//    private static int handleBlock(String code, StringBuilder sb, int braceInd) {
+//        BlockType type = getBlockType(sb, braceInd);
+//        System.out.println("type = " + type);
+//        String indexVariableName = "";
+//
+//        //sb.insert(PrevRowInd+1, "pv.show();\n");
+//        int endBraceIndex = sb.indexOf("}", braceInd);
+//        System.out.println("braceInd = " + braceInd + ", endBraceIndex = " + endBraceIndex);
+//        if (endBraceIndex != -1) {
+//            String blockCode = getEscapedBlockCode(sb, braceInd, endBraceIndex);
+//            if (type == BlockType.FOR) {
+//                indexVariableName = VisualFrame.findIndexVariable(blockCode);
+//            } else if (type == BlockType.WHILE || type == BlockType.IF) {
+//                
+//                indexVariableName = VisualFrame.extractVariable(blockCode);
+//            }
+//            System.out.println("blockCode = '" + blockCode + "' ::end blockCode");
+//            String textToInsert = "  pv.show(\"" + blockCode + "\", " + indexVariableName + ", BlockType." + type.name() + ");" + REMOVE_MESSAGE;
+//            final int lastInBlockIndex = getStartOfLine(sb, endBraceIndex);
+//
+//            if (!checkIfAlreadyThere(sb, lastInBlockIndex)) {
+//                sb.insert(lastInBlockIndex, textToInsert);
+//                endBraceIndex += textToInsert.length();
+//            }
+//            if (type == BlockType.FOR || type == BlockType.WHILE || type == BlockType.IF) {
+//                if (type == BlockType.FOR) {
+//                    textToInsert = "  pv.showAfterFor();" + REMOVE_MESSAGE;
+//                }
+//                final int afterBlockIndex = getStartOfNextLine(sb, endBraceIndex);
+//                System.out.println("afterBlockIndex = " + afterBlockIndex);
+//                if (!checkIfAlreadyThere(sb, afterBlockIndex + 3)) {
+//                    sb.insert(afterBlockIndex, textToInsert);
+//                }
+//                endBraceIndex += textToInsert.length();
+//            }
+//            System.out.println("endBraceIndex = " + endBraceIndex);
+//        }
+//        return endBraceIndex;
+//    }
 
     private static int getStartOfNextLine(StringBuilder sb, int index) {
         int PrevRowInd = sb.indexOf("\n", index) + 1;

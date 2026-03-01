@@ -212,26 +212,7 @@ public class VisualFrame extends JDialog {
         return "Ingen variabel hittades";
     }
 
-    public static String findIndexVariable(String code) {
-        //String code = "for (int counter = 0; counter < 20; counter++)";
-
-        // Regex-mönstret
-        // OBS: I Java-strängar måste vi dubbel-escapa backslash (\\s istället för \s)
-        String regex = "for\\s*\\(\\s*\\w+\\s+(\\w+)\\s*=";
-
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(code);
-
-        if (matcher.find()) {
-            // group(1) returnerar det som fanns inuti första parentesen i vårt regex
-            String variableName = matcher.group(1);
-            //System.out.println("Hittad indexvariabel: '" + variableName + "'");
-            return variableName.trim();
-        } else {
-            //System.out.println("Ingen matchning hittades.");
-            return "";
-        }
-    }
+   
 
 //    public static String replaceIndexVariable(String code, String indexVariable ,int i){
 //        System.out.println("replaceIndexVariable code: '"+code+"', indexVariable: '"+indexVariable+"', i:"+i);
