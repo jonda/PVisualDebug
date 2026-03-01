@@ -43,6 +43,7 @@ public class VisualFrame extends JDialog {
     JTextArea origCodeArea = new JTextArea();
     JTextArea code1Area = new JTextArea();
     JTextArea code2Area = new JTextArea();
+    PVRowList rowList = new PVRowList();
 
     //JButton nextButton = new JButton("Nästa");
 //        JEditTextArea debugLabel = new JEditTextArea(new PdeTextAreaDefaults(),
@@ -239,7 +240,7 @@ public class VisualFrame extends JDialog {
 //        return retVal;
 //    }
     //Obs denna funktion kör i en annan tråd
-    public void show(BufferedImage bi, int rowNr, String origCode, String code1, String code2) {
+    public void show(BufferedImage bi, int rowNr, String variableString, String origCode, String code1, String code2) {
         System.out.println("-> show origCode = " + origCode);
         setVisible(true);
         ImageIcon ic = new ImageIcon(bi);
@@ -249,7 +250,12 @@ public class VisualFrame extends JDialog {
             origCode = "i";
         }
         //String indexVariable = "";
-        String debug = "";
+        //String debug = "";
+        rowList.set(new PVRow(rowNr, origCode, code1, code2));
+        
+        SwingUtilities.invokeLater(new ShowCode(variableString, rowList.getOrigCode(), rowList.getCode1(), rowList.getCode2(), ic));
+        //SwingUtilities.invokeLater(new ShowCode(debug, origCode, code1, code2, ic));
+        
 //        if (origCode.contains("(")) {
 //            ;
 //            if (type == BlockType.FOR) {
@@ -281,7 +287,6 @@ public class VisualFrame extends JDialog {
 //            }
 //        }
 //
-        SwingUtilities.invokeLater(new ShowCode(debug, origCode, code1, code2, ic));
 //            debugArea.setText(debug);
 //            code1Area.setText(code1);
 //            code2Area.setText(code2);
