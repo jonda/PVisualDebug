@@ -12,6 +12,7 @@ public class CodeRowVar {
     private String type;
     private String varName;
     private String value;
+    public final static String INDEXVARIABLE = "indexvariable";
 
     public CodeRowVar(String type, String varName, String value) {
         this.type = type;
@@ -46,8 +47,10 @@ public class CodeRowVar {
 
     @Override
     public String toString() {
-        return getDefinitionRowWithAssignment();
+        return "CodeRowVar{" + "type=" + type + ", varName=" + varName + ", value=" + value + '}';
+        //return getDefinitionRowWithAssignment();
     }
+
     
     
     

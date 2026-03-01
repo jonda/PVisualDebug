@@ -72,7 +72,7 @@
     -->
      <target name="-post-jar">   
         <exec dir="." executable="python">
-            <arg line='"C:\\dropbox\java\PVisual\src\deploy\deploy.py"'/>
+            <arg line='"C:\\dropbox\java\PVisualDebug\src\deploy\deploy.py"'/>
         </exec>
     </target>
 </project>
