@@ -18,7 +18,7 @@ for filename in os.listdir("."):
 
 os.chdir("..")
 
-src = "dist/PVisual.jar"
+src = "dist/PVisualDebug.jar"
 dst = base+"library/PVisual.jar"
 
 print( os.getcwd())
@@ -55,7 +55,7 @@ for filename in os.listdir("."):
 
 
 os.chdir("..")
-src="dist/PVisual.jar"
+src="dist/PVisualDebug.jar"
 dst=base+"tool/PVisualTool.jar"
 print( os.getcwd() )
 print("kopierar "+src + " till " + dst)

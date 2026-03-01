@@ -5,6 +5,7 @@
 package PVisual;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
@@ -17,6 +18,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
@@ -37,6 +39,7 @@ public class VisualFrame extends JDialog {
 
     JLabel imageLabel = new JLabel("JVisual");
     JTextArea debugArea = new JTextArea("i:?");
+//    JEditorPane origCodeArea = new JEditorPane();
     JTextArea origCodeArea = new JTextArea();
     JTextArea code1Area = new JTextArea();
     JTextArea code2Area = new JTextArea();
@@ -59,6 +62,7 @@ public class VisualFrame extends JDialog {
     }
 
     public VisualFrame(PApplet par, int delayValue) {
+         //origCodeArea.setContentType("text/html");
         //setModal(!autoMode);
 
         if (delayValue >= 0) {
@@ -131,16 +135,16 @@ public class VisualFrame extends JDialog {
         return lastIndex;
     }
 
-   public static void main(String[] args) {
+    public static void main(String[] args) {
         // --- Testfall ---
-        
+
         // Krav 1: Ska fungera på både if och while
         System.out.println(extractVariable("if(a < 5)"));                  // Output: a
         System.out.println(extractVariable("while ( ! isRunning )"));      // Output: isRunning
-        
+
         // Krav 2: Variabeln på höger sida
         System.out.println(extractVariable("if(5 < b)"));                  // Output: b
-        
+
         // Komplexa fall med metoder och strängar
         System.out.println(extractVariable("while(\"hej\".equals(s))"));   // Output: s
         System.out.println(extractVariable("if(true == minVariabel)"));    // Output: minVariabel
@@ -148,7 +152,8 @@ public class VisualFrame extends JDialog {
     }
 
     /**
-     * Metod för att extrahera den första variabeln i ett if- eller while-villkor.
+     * Metod för att extrahera den första variabeln i ett if- eller
+     * while-villkor.
      */
     public static String extractVariable(String codeLine) {
         // 1. Regex för att hitta både 'while' och 'if'
@@ -195,7 +200,7 @@ public class VisualFrame extends JDialog {
 
                 // Om det var en metod, hoppa till nästa matchning i while-loopen
                 if (isMethodCall) {
-                    continue; 
+                    continue;
                 }
 
                 // Har vi passerat alla filter ovan? Då har vi hittat vår variabel!
@@ -205,7 +210,6 @@ public class VisualFrame extends JDialog {
 
         return "Ingen variabel hittades";
     }
-
 
     public static String findIndexVariable(String code) {
         //String code = "for (int counter = 0; counter < 20; counter++)";
@@ -235,49 +239,48 @@ public class VisualFrame extends JDialog {
 //        return retVal;
 //    }
     //Obs denna funktion kör i en annan tråd
-    public void show(BufferedImage bi, String origCode, int i, BlockType type) {
+    public void show(BufferedImage bi, int rowNr, String origCode, String code1, String code2) {
         System.out.println("-> show origCode = " + origCode);
         setVisible(true);
         ImageIcon ic = new ImageIcon(bi);
 
-        lastIndex = i;
+        //lastIndex = i;
         if (origCode == null) {
             origCode = "i";
         }
-        String indexVariable = "";
-        String code1 = "";
-        String code2 = "";
+        //String indexVariable = "";
         String debug = "";
-        if (origCode.contains("(")) {
-            ;
-            if (type == BlockType.FOR) {
-                lastForBlock = origCode;
-                indexVariable = findIndexVariable(origCode);
-                code1 = replaceIndexVariable(origCode, i + "");
-            } else {
-                indexVariable = extractVariable(origCode);
-                code1 = replaceSafe(origCode, indexVariable, i + "");
-            }
-            indexVariabelBorder.setTitle(type.getVariabelBeteckning());
-            origCodeBorder.setTitle(type.getFullName() + "ens kod");
-            System.out.println("indexVariable: " + indexVariable + "=" + i);
-            System.out.println("code1 = " + code1);
-            code2 = CodeEvaluator.processCode(origCode, indexVariable, i);
-            System.out.println("code2 = " + code2);
-            debug = indexVariable + ":" + i;
-//                    + "\n"
-//                    + code1
-//                    + "\n\n\n"
-//                    + code2;
-        } else {
-            System.out.println("i = " + i + ", DO_NOT_SHOW_I = " + DO_NOT_SHOW_I);
-            if (i != DO_NOT_SHOW_I) {
-                debugArea.setText(origCode + ": " + i);
-            } else {
-                debugArea.setText("");
-            }
-        }
-
+//        if (origCode.contains("(")) {
+//            ;
+//            if (type == BlockType.FOR) {
+//                lastForBlock = origCode;
+//                indexVariable = findIndexVariable(origCode);
+//                code1 = replaceIndexVariable(origCode, i + "");
+//            } else {
+//                indexVariable = extractVariable(origCode);
+//                code1 = replaceSafe(origCode, indexVariable, i + "");
+//            }
+//            indexVariabelBorder.setTitle(type.getVariabelBeteckning());
+//            origCodeBorder.setTitle(type.getFullName() + "ens kod");
+//            System.out.println("indexVariable: " + indexVariable + "=" + i);
+//            System.out.println("code1 = " + code1);
+//            code2 = CodeEvaluator.processCode(origCode, indexVariable, i);
+//            System.out.println("code2 = " + code2);
+//            debug = indexVariable + ":" + i;
+////                    + "\n"
+////                    + code1
+////                    + "\n\n\n"
+////                    + code2;
+//
+//        } else {
+//            System.out.println("i = " + i + ", DO_NOT_SHOW_I = " + DO_NOT_SHOW_I);
+//            if (i != DO_NOT_SHOW_I) {
+//                debugArea.setText(origCode + ": " + i);
+//            } else {
+//                debugArea.setText("");
+//            }
+//        }
+//
         SwingUtilities.invokeLater(new ShowCode(debug, origCode, code1, code2, ic));
 //            debugArea.setText(debug);
 //            code1Area.setText(code1);
@@ -308,15 +311,33 @@ public class VisualFrame extends JDialog {
             this.code1 = code1;
             this.code2 = code2;
             this.ic = ic;
+
         }
 
         @Override
         public void run() {
             debugArea.setText(debug);
-            origCodeArea.setText(origCode);
             code1Area.setText(code1);
             code2Area.setText(code2);
             imageLabel.setIcon(ic);
+            int endBraceindex = origCode.lastIndexOf('}');
+            System.out.println("endBraceindex = " + endBraceindex);
+            int startOfEndLine = origCode.lastIndexOf('\n', endBraceindex);
+            int endOfEndLine = origCode.indexOf('\n', endBraceindex);
+            if (endOfEndLine == -1) {
+                endOfEndLine = origCode.length() - 1;
+            }
+            System.out.println("origCode.length() = " + origCode.length());
+
+            //origCode = "<pre>"+ origCode.substring(0, startOfEndLine) + "<b>"+origCode.substring(startOfEndLine, endOfEndLine+1)+"</b>"+origCode.substring(endOfEndLine+1)+"</pre>";
+            System.out.println("origCode = " + origCode);            
+            origCodeArea.setText(origCode);
+//            origCodeArea.setSelectionColor(Color.red);
+//            origCodeArea.setSelectionStart(startOfEndLine);
+            System.out.println("startOfEndLine = " + startOfEndLine);
+//            origCodeArea.setSelectionEnd(endOfEndLine);
+            System.out.println("endOfEndLine = " + endOfEndLine);
+            System.out.println("origCode.length() = " + origCode.length());
             pack();
         }
     }

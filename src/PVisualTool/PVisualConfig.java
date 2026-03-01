@@ -86,7 +86,7 @@ public class PVisualConfig extends JFrame {
 
     void addFunctionsActionPerformed(ActionEvent ae) {
         Editor editor = base.getActiveEditor();
-
+        
         String code = editor.getText();
         int delayValue = -1;
         if (!clickCheckBox.isSelected()) {
@@ -105,10 +105,10 @@ public class PVisualConfig extends JFrame {
 
     void removeFunctionsActionPerformed(ActionEvent ae) {
         System.out.println("---------------------removeFunctionsActionPerformed----------------");
-        Editor editor = base.getActiveEditor();
-        String code = editor.getText();
-        String newCode = InsertUtils.removePVisualFunctions(code);
-        editor.setText(newCode);
+//        Editor editor = base.getActiveEditor();
+//        String code = editor.getText();
+//        String newCode = InsertUtils.removePVisualFunctions(code);
+//        editor.setText(newCode);
         setVisible(false);
         dispose();
     }

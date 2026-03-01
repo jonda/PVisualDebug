@@ -50,11 +50,11 @@ public class PVisual {
 //
 //    }
 
-    public void showAfterFor() {
-        //String code = getCode();
-        show(vf.getLastForBlock(), vf.getLastIndex() + 1);
-        System.out.println("Väntar nu: " + delayValue);
-    }
+//    public void showAfterFor() {
+//        //String code = getCode();
+//        show(vf.getLastForBlock(), vf.getLastIndex() + 1);
+//        System.out.println("Väntar nu: " + delayValue);
+//    }
 
     private String getCode() {
         String sketchName = parent.sketchFile(parent.sketchPath()).getName();
@@ -75,14 +75,14 @@ public class PVisual {
         return code;
     }
 
-    public void show(String code, int i) {
-        show(code, i, BlockType.FOR);
-    }
+//    public void show(String code, int i) {
+//        show(code, i, BlockType.FOR);
+//    }
 
-    public void show(String code, int i, BlockType type) {
+    public void show(int rowNr, String origCode, String code1, String code2) {
         PImage sketchImage = parent.get();
         BufferedImage bi = (BufferedImage) sketchImage.getNative();
-        vf.show(bi, code, i, type);
+        vf.show(bi,  rowNr,  origCode,  code1,  code2);
         //vf.setVisible(true);
         if (delayValue!=-1) {
             parent.delay(delayValue);

@@ -76,19 +76,27 @@ public class InsertUtils {
     }
 
     public static String insertPVisualFunctions(String code, int delayValue) {
-        StringBuilder sb = new StringBuilder(code);
-        insertImport(sb);
-        insertCreatePv(sb, delayValue);
-        int braceInd = sb.indexOf("{");
-
-        while (braceInd > 0) {
-            int curIndex = handleBlock(code, sb, braceInd);
-            if (curIndex == -1) {
-                braceInd = -1;
-            } else {
-                braceInd = sb.indexOf("{", curIndex);
-            }
-        }
+       StringBuilder sb = new StringBuilder();
+       insertImport(sb);
+       insertCreatePv(sb, delayValue);
+       CodeList cl = new CodeList(code);
+       sb.append(cl.getDebugCode());
+        
+        
+        //Gamla
+//        StringBuilder sb = new StringBuilder(code);
+//        insertImport(sb);
+//        insertCreatePv(sb, delayValue);
+//        int braceInd = sb.indexOf("{");
+//
+//        while (braceInd > 0) {
+//            int curIndex = handleBlock(code, sb, braceInd);
+//            if (curIndex == -1) {
+//                braceInd = -1;
+//            } else {
+//                braceInd = sb.indexOf("{", curIndex);
+//            }
+//        }
         return sb.toString();
     }
 
