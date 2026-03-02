@@ -35,9 +35,7 @@ public class CodeList extends ArrayList<CodeRow> {
                 funcMode = true;
             }
             System.out.println("codeRow :'" + codeRow+"'");
-
         }
-
     }
 
     public static void main(String[] args) {

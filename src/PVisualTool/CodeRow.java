@@ -34,7 +34,7 @@ public class CodeRow {
         this.rowVars.addAll(rowVarsIn);
         ArrayList<CodeRowVar> thisRowVars = rowVars.get(rowVars.size() - 1);
         rowVars.remove(rowVars.size() - 1);
-        System.out.println("->CodeRow---------------------------------------------------");
+        System.out.println("->CodeRow "+rowNr+" ---------------------------------------------------");
         System.out.println("row = " + row);
         this.row = row;
         String rowTr = row.trim();
@@ -151,24 +151,24 @@ public class CodeRow {
         ret.append(getVariablesString());
         ret.append(", \"");
         ret.append(getEscapedRow());
-        ret.append("\", \"");
-        ret.append(getRowWithInsertedOrigVariables());
         ret.append("\", ");
+        ret.append(getRowWithInsertedOrigVariables());
+        ret.append(", ");
         ret.append(tempVarsAndCode.getDebugStringExpression());
         ret.append(");\n");
         return ret.toString();
     }
 
     public String getRowWithInsertedOrigVariables() {
-        // Flatten the list of variables, giving priority to inner scopes.
+        System.out.println("->getRowWithInsertedOrigVariables rowNr: " + rowNr);
         List<CodeRowVar> allVars = new ArrayList<>();
-        // Iterate from the current block level downwards to handle variable shadowing correctly.
         for (int i = this.blockLevel; i >= 0; i--) {
             if (i < rowVars.size()) {
                 allVars.addAll(rowVars.get(i));
             }
         }
-
+        System.out.println("allVars = " + allVars + ", row: " + row);
+    
         String assignedVar = null;
         String[] parts = row.split("=");
         if (parts.length > 1) {
@@ -176,38 +176,33 @@ public class CodeRow {
             String[] tokens = lhs.split("\\s+");
             assignedVar = tokens[tokens.length - 1];
         }
-
-        StringBuilder result = new StringBuilder();
+    
+        StringBuilder result = new StringBuilder("\"");
         boolean inString = false;
         boolean inCharLiteral = false;
         boolean inLineComment = false;
-
+    
         for (int i = 0; i < row.length(); i++) {
             char c = row.charAt(i);
-
+    
             if (!inString && !inCharLiteral && c == '/' && i + 1 < row.length() && row.charAt(i + 1) == '/') {
                 inLineComment = true;
             }
-
+    
             if (inLineComment) {
-                result.append(c);
+                appendEscaped(result, c);
                 continue;
             }
-
+    
+            // This logic is to avoid replacing variables inside source string literals
             if (c == '"' && (i == 0 || row.charAt(i - 1) != '\\')) {
                 inString = !inString;
             }
-
             if (c == '\'' && (i == 0 || row.charAt(i - 1) != '\\')) {
                 inCharLiteral = !inCharLiteral;
             }
-
-            if (inString || inCharLiteral) {
-                result.append(c);
-                continue;
-            }
-
-            if (Character.isJavaIdentifierStart(c)) {
+    
+            if (!inString && !inCharLiteral && Character.isJavaIdentifierStart(c)) {
                 StringBuilder identifier = new StringBuilder();
                 identifier.append(c);
                 int j = i + 1;
@@ -215,34 +210,54 @@ public class CodeRow {
                     identifier.append(row.charAt(j));
                     j++;
                 }
-
                 String idString = identifier.toString();
-                String value = null;
-
-                if (idString.equals(assignedVar)) {
-                    // This is the variable being assigned to, so don't replace it.
-                } else {
+                boolean isVar = false;
+    
+                if (!idString.equals(assignedVar)) {
                     for (CodeRowVar var : allVars) {
                         if (var.getVarName().equals(idString)) {
-                            value = var.getValue();
+                            isVar = true;
                             break;
                         }
                     }
                 }
-
-                if (value != null) {
-                    result.append(value);
+    
+                if (isVar) {
+                    result.append("\"+").append(idString).append("+\"");
                 } else {
                     result.append(idString);
                 }
                 i = j - 1;
             } else {
-                result.append(c);
+                appendEscaped(result, c);
             }
         }
-
-        String resultString = result.toString();
-        return resultString.replace("\n", "\\n").replace("\"", "\\\"");
+    
+        result.append("\"");
+    
+        String finalString = result.toString().replace("+\"\"+", "+");
+        if (finalString.startsWith("\"\"+")) {
+            finalString = finalString.substring(3);
+        }
+        if (finalString.endsWith("+\"\"")) {
+            finalString = finalString.substring(0, finalString.length() - 3);
+        }
+        if (finalString.isEmpty()) {
+            finalString = "\"\"";
+        }
+    
+        System.out.println("<-getRowWithInsertedOrigVariables resultString = " + finalString);
+        return finalString;
+    }
+    
+    private void appendEscaped(StringBuilder builder, char c) {
+        if (c == '"') {
+            builder.append("\\\"");
+        } else if (c == '\\') {
+            builder.append("\\\\");
+        } else {
+            builder.append(c);
+        }
     }
 
     public static void addVars(String row, int blockLevel, ArrayList<CodeRowVar> rowBlockVars) {
@@ -279,6 +294,10 @@ public class CodeRow {
         if (meaningLess || (funcMode && blockLevel == 0)) {
             ret = row + "//tom  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n";
 
+        } else if(blockEnd()){
+            ret = getExtraLines()
+                    + getShowLine()
+                    + row;   //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
         } else {
             ret = getExtraLines()
                     + row   //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
@@ -334,8 +353,8 @@ public class CodeRow {
 
     public static void main(String[] args) {
         //String s = "int apa = 2;";
-        //String s = "circle(r*i, 30,30);";
-        String s = "a = int(JOptionPane.showInputDialog(\"ange a\"));";
+        String s = "circle(r*i, 30,30);";
+        //String s = "a = int(JOptionPane.showInputDialog(\"ange a\"));";
         ArrayList<ArrayList<CodeRowVar>> vars = new ArrayList<>();
         vars.add(new ArrayList<>());
         vars.get(0).add(new CodeRowVar("int", "i", "20"));
