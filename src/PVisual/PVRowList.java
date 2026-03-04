@@ -28,18 +28,18 @@ public class PVRowList extends ArrayList<PVRow> {
         }
     }
     
-    String getOrigCode(){
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < this.size(); i++) {
-            PVRow row = this.get(i);
-            sb.append(row.getRowNr());
-            sb.append(' ');
-            sb.append(row.getOrigCode());
-            sb.append('\n');
-        }
-        return sb.toString();
-    }
-    
+//    String getOrigCode(){
+//        StringBuilder sb = new StringBuilder();
+//        for (int i = 0; i < this.size(); i++) {
+//            PVRow row = this.get(i);
+//            sb.append(row.getRowNr());
+//            sb.append(' ');
+//            sb.append(row.getOrigCode());
+//            sb.append('\n');
+//        }
+//        return sb.toString();
+//    }
+//    
     String getCode1(){
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < this.size(); i++) {

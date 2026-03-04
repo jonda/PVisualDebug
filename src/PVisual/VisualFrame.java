@@ -20,12 +20,18 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
 
 import processing.core.PApplet;
 
@@ -40,9 +46,9 @@ public class VisualFrame extends JDialog {
     JLabel imageLabel = new JLabel("JVisual");
     JTextArea debugArea = new JTextArea("i:?");
 //    JEditorPane origCodeArea = new JEditorPane();
-    JTextArea origCodeArea = new JTextArea();
-    JTextArea code1Area = new JTextArea();
-    JTextArea code2Area = new JTextArea();
+    JTextPane origCodeArea = new JTextPane();
+    JTextPane code1Area = new JTextPane();
+    JTextPane code2Area = new JTextPane();
     PVRowList rowList = new PVRowList();
 
     //JButton nextButton = new JButton("Nästa");
@@ -211,7 +217,6 @@ public class VisualFrame extends JDialog {
 //
 //        return "Ingen variabel hittades";
 //    }
-
 //    public static String replaceIndexVariable(String code, String indexVariable ,int i){
 //        System.out.println("replaceIndexVariable code: '"+code+"', indexVariable: '"+indexVariable+"', i:"+i);
 //        String retVal = code.replace(indexVariable, ""+i);
@@ -239,7 +244,7 @@ public class VisualFrame extends JDialog {
             rowList.set(new PVRow(rowNr, origCode, code1, code2));
         }
 
-        SwingUtilities.invokeLater(new ShowCode(variableString, rowList.getOrigCode(), rowList.getCode1(), rowList.getCode2(), ic));
+        SwingUtilities.invokeLater(new ShowCode(rowNr, variableString, rowList, rowList.getCode1(), rowList.getCode2(), ic));
         //SwingUtilities.invokeLater(new ShowCode(debug, origCode, code1, code2, ic));
 
 //        if (origCode.contains("(")) {
@@ -291,14 +296,16 @@ public class VisualFrame extends JDialog {
     private class ShowCode implements Runnable {
 
         String debug;
-        String origCode;
+        PVRowList rowList;
         String code1;
         String code2;
         ImageIcon ic;
+        int currRowNr;
 
-        public ShowCode(String debug, String origCode, String code1, String code2, ImageIcon ic) {
+        public ShowCode(int currRowNr, String debug, PVRowList rowList, String code1, String code2, ImageIcon ic) {
+            this.currRowNr = currRowNr;
             this.debug = debug;
-            this.origCode = origCode;
+            this.rowList = rowList;
             this.code1 = code1;
             this.code2 = code2;
             this.ic = ic;
@@ -308,28 +315,59 @@ public class VisualFrame extends JDialog {
         @Override
         public void run() {
             debugArea.setText(debug);
-            code1Area.setText(code1);
-            code2Area.setText(code2);
-            imageLabel.setIcon(ic);
-            int endBraceindex = origCode.lastIndexOf('}');
-            System.out.println("endBraceindex = " + endBraceindex);
-            int startOfEndLine = origCode.lastIndexOf('\n', endBraceindex);
-            int endOfEndLine = origCode.indexOf('\n', endBraceindex);
-            if (endOfEndLine == -1) {
-                endOfEndLine = origCode.length() - 1;
-            }
-            System.out.println("origCode.length() = " + origCode.length());
 
-            //origCode = "<pre>"+ origCode.substring(0, startOfEndLine) + "<b>"+origCode.substring(startOfEndLine, endOfEndLine+1)+"</b>"+origCode.substring(endOfEndLine+1)+"</pre>";
-            System.out.println("origCode = " + origCode);
-            origCodeArea.setText(origCode);
-//            origCodeArea.setSelectionColor(Color.red);
-//            origCodeArea.setSelectionStart(startOfEndLine);
-            System.out.println("startOfEndLine = " + startOfEndLine);
-//            origCodeArea.setSelectionEnd(endOfEndLine);
-            System.out.println("endOfEndLine = " + endOfEndLine);
-            System.out.println("origCode.length() = " + origCode.length());
-            pack();
+            origCodeArea.setText("");
+            code1Area.setText("");
+            code2Area.setText("");
+            final Document origDoc = origCodeArea.getDocument();
+            final Document code1Doc = code1Area.getDocument();
+            final Document code2Doc = code2Area.getDocument();
+            for (int i = 0; i < rowList.size(); i++) {
+                PVRow row = rowList.get(i);
+                StringBuilder sb = new StringBuilder();
+                sb.append(row.getRowNr());
+                sb.append(' ');
+                sb.append(row.getOrigCode());
+                sb.append('\n');
+                try {
+                    SimpleAttributeSet colorCode = new SimpleAttributeSet();
+                    StyleConstants.setFontFamily(colorCode, "Courier New Italic");
+                    if (row.getRowNr() == currRowNr) {
+                        StyleConstants.setForeground(colorCode, Color.RED);
+                    } else {
+                        StyleConstants.setForeground(colorCode, Color.BLUE);
+
+                    }
+                    origDoc.insertString(origDoc.getLength(), sb.toString(), colorCode);
+                    code1Doc.insertString(code1Doc.getLength(), row.getRowNr()+ " "+row.getCode1()+"\n", colorCode);
+                    code2Doc.insertString(code2Doc.getLength(), row.getRowNr()+ " "+row.getCode2()+"\n",colorCode);
+                } catch (BadLocationException ex) {
+                    JOptionPane.showMessageDialog(VisualFrame.this, "Problem att lägga till i textarea: " + ex.getMessage());
+                }
+            }
+
+
+            imageLabel.setIcon(ic);
+
+//            int endBraceindex = rowList.lastIndexOf('}');
+//            System.out.println("endBraceindex = " + endBraceindex);
+//            int startOfEndLine = rowList.lastIndexOf('\n', endBraceindex);
+//            int endOfEndLine = rowList.indexOf('\n', endBraceindex);
+//            if (endOfEndLine == -1) {
+//                endOfEndLine = rowList.length() - 1;
+//            }
+//            System.out.println("origCode.length() = " + rowList.length());
+//
+//            //origCode = "<pre>"+ origCode.substring(0, startOfEndLine) + "<b>"+origCode.substring(startOfEndLine, endOfEndLine+1)+"</b>"+origCode.substring(endOfEndLine+1)+"</pre>";
+//            System.out.println("origCode = " + rowList);
+//            origCodeArea.setText(rowList);
+            ////            origCodeArea.setSelectionColor(Color.red);
+////            origCodeArea.setSelectionStart(startOfEndLine);
+//            System.out.println("startOfEndLine = " + startOfEndLine);
+////            origCodeArea.setSelectionEnd(endOfEndLine);
+//            System.out.println("endOfEndLine = " + endOfEndLine);
+//            System.out.println("origCode.length() = " + rowList.length());
+        pack();
         }
     }
 
@@ -394,8 +432,7 @@ public class VisualFrame extends JDialog {
 //
 //        return sb.toString();
 //    }
-
-    // Hjälpmetod: Byter ut variabeln men undviker textsträngar ("...")
+// Hjälpmetod: Byter ut variabeln men undviker textsträngar ("...")
 //    private static String replaceSafe(String text, String targetVar, String replacement) {
 //        String[] parts = text.split("\"", -1);
 //        StringBuilder sb = new StringBuilder();

@@ -1,4 +1,5 @@
 package PVisualTool;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -7,7 +8,6 @@ import java.util.regex.Pattern;
 public class ExpressionExtractor {
     private int tempCounter = 1;
 
-    // ... (TempVarsAndCodeLine är oförändrad från tidigare) ...
     public static class TempVarsAndCodeLine {
         private String modifiedLine;
         private List<String> tempVariableDeclarations;
@@ -61,42 +61,47 @@ public class ExpressionExtractor {
     public TempVarsAndCodeLine extractExpressions(String javaLine, int lineNumber) {
         List<String> tempDecls = new ArrayList<>();
         List<String> tempNames = new ArrayList<>();
-        String modifiedLine = javaLine.trim();
+        
+        // --- NY LOGIK: Fånga indenteringen ---
+        Matcher indentMatcher = Pattern.compile("^\\s*").matcher(javaLine);
+        String indentation = indentMatcher.find() ? indentMatcher.group() : "";
+        
+        // Trimmad version för vår analys
+        String workingLine = javaLine.trim();
 
-        // --- NY FIX: Kolla det första ordet på raden ---
-        // Delar strängen vid första icke-ord-tecknet (t.ex. mellanslag eller parentes)
-        String[] tokens = modifiedLine.split("\\W+", 2); 
+        String[] tokens = workingLine.split("\\W+", 2);
         String firstWord = tokens.length > 0 ? tokens[0] : "";
         
-        // Lista på ord vi inte ska röra eftersom de styr kodens flöde
         List<String> controlFlowKeywords = List.of("for", "while", "if", "else", "switch", "catch", "do");
         if (controlFlowKeywords.contains(firstWord)) {
-            // Returnera raden exakt som den är, utan att skapa temporära variabler
-            return new TempVarsAndCodeLine(modifiedLine, tempDecls, tempNames);
+            // Returnera originalraden omodifierad (behåller indentering)
+            return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames);
         }
 
         // 1. Hantera tilldelningar
-        if (modifiedLine.contains("=") && !modifiedLine.contains("==")) {
-            String[] parts = modifiedLine.split("=", 2);
+        if (workingLine.contains("=") && !workingLine.contains("==")) {
+            String[] parts = workingLine.split("=", 2);
             String leftSide = parts[0].trim();
             String rightSide = parts[1].trim();
 
             if (rightSide.endsWith(";")) rightSide = rightSide.substring(0, rightSide.length() - 1);
 
             if (isLiteral(rightSide)) {
-                return new TempVarsAndCodeLine(modifiedLine, tempDecls, tempNames);
+                return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames);
             }
 
             String tempName = getNextTemp(lineNumber);
-            tempDecls.add("var " + tempName + " = " + rightSide + ";");
+            // Lägg till indenteringen på deklarationen
+            tempDecls.add(indentation + "var " + tempName + " = " + rightSide + ";");
             tempNames.add(tempName);
             
-            return new TempVarsAndCodeLine(leftSide + " = " + tempName + ";", tempDecls, tempNames);
+            // Lägg till indenteringen på den modifierade raden
+            return new TempVarsAndCodeLine(indentation + leftSide + " = " + tempName + ";", tempDecls, tempNames);
         }
 
         // 2. Hantera funktionsanrop
         Pattern funcPattern = Pattern.compile("([a-zA-Z0-9_]+)\\((.*)\\);?");
-        Matcher matcher = funcPattern.matcher(modifiedLine);
+        Matcher matcher = funcPattern.matcher(workingLine);
 
         if (matcher.find()) {
             String methodName = matcher.group(1);
@@ -112,18 +117,21 @@ public class ExpressionExtractor {
                         newArgs.add(arg); 
                     } else {
                         String tempName = getNextTemp(lineNumber);
-                        tempDecls.add("var " + tempName + " = " + arg + ";");
+                        // Indentera temp-variablerna
+                        tempDecls.add(indentation + "var " + tempName + " = " + arg + ";");
                         tempNames.add(tempName);
                         newArgs.add(tempName);
                     }
                 }
             }
 
-            String newFuncCall = methodName + "(" + String.join(", ", newArgs) + ");";
+            // Indentera själva anropet
+            String newFuncCall = indentation + methodName + "(" + String.join(", ", newArgs) + ");";
             return new TempVarsAndCodeLine(newFuncCall, tempDecls, tempNames);
         }
 
-        return new TempVarsAndCodeLine(modifiedLine, tempDecls, tempNames);
+        // Returnera originalraden (inklusive space) om vi inte matchar något
+        return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames);
     }
 
     private String getNextTemp(int lineNumber) {
@@ -134,12 +142,12 @@ public class ExpressionExtractor {
     public static void main(String[] args) {
         ExpressionExtractor extractor = new ExpressionExtractor();
         
-        // Testar din bugg-rapport!
-        String forLoopLine = "for (int i=0; i < 10; i++) {";
-        TempVarsAndCodeLine res = extractor.extractExpressions(forLoopLine, 11);
+        // En indenterad kodrad (t.ex. med 8 inledande mellanslag)
+        String indentedLine = "        calculate(a + b, c / 2);";
+        TempVarsAndCodeLine res = extractor.extractExpressions(indentedLine, 42);
         
-        System.out.println("--- Rad 11 (For-loop) ---");
+        System.out.println("--- Rad 42 med indentering ---");
         System.out.println("Körbar kod:\n" + res.toString());
-        System.out.println("Antal temp-variabler skapade: " + res.getTempVariableNames().size());
+        System.out.println("\nEnbart modiferad rad:\n" + res.getModifiedLine());
     }
 }

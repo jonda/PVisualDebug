@@ -310,7 +310,7 @@ public class CodeRow {
 
         } else {
             ret = getExtraLines()
-                    + row   //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
+                    + row +"\n"  //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
                     + getShowLine();
         }
         return ret;
