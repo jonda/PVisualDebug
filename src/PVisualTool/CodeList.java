@@ -12,14 +12,14 @@ import java.util.ArrayList;
  */
 public class CodeList extends ArrayList<CodeRow> {
 
-    String code;
+    //String code;
     int blockLevel = 0;
     private boolean funcMode = false;
 
     public CodeList(String code) {
         ArrayList<ArrayList<CodeRowVar>> rowVars = new ArrayList<>();
         rowVars.add(new ArrayList<>());
-        this.code = code;
+        //this.code = code;
         String[] stringRowArr = code.split("\n");
         for (int i = 0; i < stringRowArr.length; i++) {
             String stringRow = stringRowArr[i];
@@ -36,6 +36,14 @@ public class CodeList extends ArrayList<CodeRow> {
             }
             System.out.println("codeRow :'" + codeRow+"'");
         }
+        for (int i = 1; i < size(); i++) { //Obs det ska vara 1
+            if(get(i).blockEnd()){
+                final CodeRow line = get(i);
+                final String extraLinjeAttVisa = line.getEscapedRow();
+                System.out.println("extraLinjeAttVisa = " + extraLinjeAttVisa);
+                get(i-1).setShowNextLine(extraLinjeAttVisa);
+            }
+        }        
     }
 
     public static void main(String[] args) {

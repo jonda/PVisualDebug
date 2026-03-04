@@ -63,7 +63,7 @@ public class VisualFrame extends JDialog {
     }
 
     public VisualFrame(PApplet par, int delayValue) {
-         //origCodeArea.setContentType("text/html");
+        //origCodeArea.setContentType("text/html");
         //setModal(!autoMode);
 
         if (delayValue >= 0) {
@@ -212,8 +212,6 @@ public class VisualFrame extends JDialog {
         return "Ingen variabel hittades";
     }
 
-   
-
 //    public static String replaceIndexVariable(String code, String indexVariable ,int i){
 //        System.out.println("replaceIndexVariable code: '"+code+"', indexVariable: '"+indexVariable+"', i:"+i);
 //        String retVal = code.replace(indexVariable, ""+i);
@@ -232,11 +230,18 @@ public class VisualFrame extends JDialog {
         }
         //String indexVariable = "";
         //String debug = "";
-        rowList.set(new PVRow(rowNr, origCode, code1, code2));
-        
+        if (origCode.contains("\n")) {
+            String[] arr = origCode.split("\n");
+            rowList.set(new PVRow(rowNr, arr[0], code1, code2));
+            rowList.set(new PVRow(rowNr + 1, arr[1], arr[1], arr[1]));
+
+        } else {
+            rowList.set(new PVRow(rowNr, origCode, code1, code2));
+        }
+
         SwingUtilities.invokeLater(new ShowCode(variableString, rowList.getOrigCode(), rowList.getCode1(), rowList.getCode2(), ic));
         //SwingUtilities.invokeLater(new ShowCode(debug, origCode, code1, code2, ic));
-        
+
 //        if (origCode.contains("(")) {
 //            ;
 //            if (type == BlockType.FOR) {
@@ -254,7 +259,7 @@ public class VisualFrame extends JDialog {
 //            code2 = CodeEvaluator.processCode(origCode, indexVariable, i);
 //            System.out.println("code2 = " + code2);
 //            debug = indexVariable + ":" + i;
-////                    + "\n"
+        ////                    + "\n"
 ////                    + code1
 ////                    + "\n\n\n"
 ////                    + code2;
@@ -316,7 +321,7 @@ public class VisualFrame extends JDialog {
             System.out.println("origCode.length() = " + origCode.length());
 
             //origCode = "<pre>"+ origCode.substring(0, startOfEndLine) + "<b>"+origCode.substring(startOfEndLine, endOfEndLine+1)+"</b>"+origCode.substring(endOfEndLine+1)+"</pre>";
-            System.out.println("origCode = " + origCode);            
+            System.out.println("origCode = " + origCode);
             origCodeArea.setText(origCode);
 //            origCodeArea.setSelectionColor(Color.red);
 //            origCodeArea.setSelectionStart(startOfEndLine);

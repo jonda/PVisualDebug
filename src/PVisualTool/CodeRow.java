@@ -27,6 +27,11 @@ public class CodeRow {
     private BlockType blockType = BlockType.UNKNOWN;
     private boolean meaningLess = false;
     private final int rowNr;
+    private String showNextLine = null;
+
+    public void setShowNextLine(String showNextLine) {
+        this.showNextLine = showNextLine;
+    }
 
     public CodeRow(int rowNr, int blockLevelIn, String row, ArrayList<ArrayList<CodeRowVar>> rowVarsIn) {
         this.rowNr = rowNr;
@@ -151,7 +156,10 @@ public class CodeRow {
         ret.append(getVariablesString());
         ret.append(", \"");
         ret.append(getEscapedRow());
-        ret.append("\", ");
+        ret.append("\"");
+        ret.append(getNextLineToShow());
+        ret.append("");
+        ret.append(", ");
         ret.append(getRowWithInsertedOrigVariables());
         ret.append(", ");
         ret.append(tempVarsAndCode.getDebugStringExpression());
@@ -159,6 +167,12 @@ public class CodeRow {
         return ret.toString();
     }
 
+    String getNextLineToShow(){
+        if(showNextLine!=null){
+            return "+\"\\n"+showNextLine+"\"";
+        }
+        return "";
+    }
     public String getRowWithInsertedOrigVariables() {
         System.out.println("->getRowWithInsertedOrigVariables rowNr: " + rowNr);
         List<CodeRowVar> allVars = new ArrayList<>();
@@ -294,10 +308,6 @@ public class CodeRow {
         if (meaningLess || (funcMode && blockLevel == 0)) {
             ret = row + "//tom  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n";
 
-        } else if(blockEnd()){
-            ret = getExtraLines()
-                    + getShowLine()
-                    + row;   //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
         } else {
             ret = getExtraLines()
                     + row   //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
