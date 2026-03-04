@@ -139,78 +139,78 @@ public class VisualFrame extends JDialog {
     public static void main(String[] args) {
         // --- Testfall ---
 
-        // Krav 1: Ska fungera på både if och while
-        System.out.println(extractVariable("if(a < 5)"));                  // Output: a
-        System.out.println(extractVariable("while ( ! isRunning )"));      // Output: isRunning
-
-        // Krav 2: Variabeln på höger sida
-        System.out.println(extractVariable("if(5 < b)"));                  // Output: b
-
-        // Komplexa fall med metoder och strängar
-        System.out.println(extractVariable("while(\"hej\".equals(s))"));   // Output: s
-        System.out.println(extractVariable("if(true == minVariabel)"));    // Output: minVariabel
-        System.out.println(extractVariable("if (10.5 >= counter)"));       // Output: counter
+//        // Krav 1: Ska fungera på både if och while
+//        System.out.println(extractVariable("if(a < 5)"));                  // Output: a
+//        System.out.println(extractVariable("while ( ! isRunning )"));      // Output: isRunning
+//
+//        // Krav 2: Variabeln på höger sida
+//        System.out.println(extractVariable("if(5 < b)"));                  // Output: b
+//
+//        // Komplexa fall med metoder och strängar
+//        System.out.println(extractVariable("while(\"hej\".equals(s))"));   // Output: s
+//        System.out.println(extractVariable("if(true == minVariabel)"));    // Output: minVariabel
+//        System.out.println(extractVariable("if (10.5 >= counter)"));       // Output: counter
     }
 
-    /**
-     * Metod för att extrahera den första variabeln i ett if- eller
-     * while-villkor.
-     */
-    public static String extractVariable(String codeLine) {
-        // 1. Regex för att hitta både 'while' och 'if'
-        // (?:while|if) matchar antingen "while" eller "if" utan att spara själva ordet i en egen grupp.
-        Pattern statementPattern = Pattern.compile("(?:while|if)\\s*\\((.*)\\)");
-        Matcher statementMatcher = statementPattern.matcher(codeLine);
-
-        if (statementMatcher.find()) {
-            // Hämta hela villkoret inuti parenteserna
-            String condition = statementMatcher.group(1).trim();
-
-            // 2. Rensa bort all text inuti citattecken ("...") 
-            // Detta förhindrar att vi råkar tro att ett ord inuti en sträng är en variabel.
-            condition = condition.replaceAll("\".*?\"", "");
-
-            // 3. Regex för att hitta giltiga Java-namn (variabler/metoder)
-            // [a-zA-Z_$] = Måste börja med bokstav, _ eller $
-            // [a-zA-Z0-9_$]* = Får följas av noll eller fler bokstäver, siffror, _ eller $
-            Pattern idPattern = Pattern.compile("[a-zA-Z_$][a-zA-Z0-9_$]*");
-            Matcher idMatcher = idPattern.matcher(condition);
-
-            while (idMatcher.find()) {
-                String match = idMatcher.group();
-
-                // 4. Filtrera bort boolean-värden och null
-                if (match.equals("true") || match.equals("false") || match.equals("null")) {
-                    continue;
-                }
-
-                // 5. Kolla om ordet följs av en vänsterparentes '('
-                // Om det gör det, är det ett metodanrop (t.ex. 'equals'), inte en variabel.
-                int end = idMatcher.end();
-                boolean isMethodCall = false;
-                for (int i = end; i < condition.length(); i++) {
-                    char c = condition.charAt(i);
-                    if (c == '(') {
-                        isMethodCall = true;
-                        break;
-                    } else if (!Character.isWhitespace(c)) {
-                        // Vi hittade ett annat tecken (t.ex. '.' eller '==') innan en eventuell parentes
-                        break;
-                    }
-                }
-
-                // Om det var en metod, hoppa till nästa matchning i while-loopen
-                if (isMethodCall) {
-                    continue;
-                }
-
-                // Har vi passerat alla filter ovan? Då har vi hittat vår variabel!
-                return match;
-            }
-        }
-
-        return "Ingen variabel hittades";
-    }
+//    /**
+//     * Metod för att extrahera den första variabeln i ett if- eller
+//     * while-villkor.
+//     */
+//    public static String extractVariable(String codeLine) {
+//        // 1. Regex för att hitta både 'while' och 'if'
+//        // (?:while|if) matchar antingen "while" eller "if" utan att spara själva ordet i en egen grupp.
+//        Pattern statementPattern = Pattern.compile("(?:while|if)\\s*\\((.*)\\)");
+//        Matcher statementMatcher = statementPattern.matcher(codeLine);
+//
+//        if (statementMatcher.find()) {
+//            // Hämta hela villkoret inuti parenteserna
+//            String condition = statementMatcher.group(1).trim();
+//
+//            // 2. Rensa bort all text inuti citattecken ("...") 
+//            // Detta förhindrar att vi råkar tro att ett ord inuti en sträng är en variabel.
+//            condition = condition.replaceAll("\".*?\"", "");
+//
+//            // 3. Regex för att hitta giltiga Java-namn (variabler/metoder)
+//            // [a-zA-Z_$] = Måste börja med bokstav, _ eller $
+//            // [a-zA-Z0-9_$]* = Får följas av noll eller fler bokstäver, siffror, _ eller $
+//            Pattern idPattern = Pattern.compile("[a-zA-Z_$][a-zA-Z0-9_$]*");
+//            Matcher idMatcher = idPattern.matcher(condition);
+//
+//            while (idMatcher.find()) {
+//                String match = idMatcher.group();
+//
+//                // 4. Filtrera bort boolean-värden och null
+//                if (match.equals("true") || match.equals("false") || match.equals("null")) {
+//                    continue;
+//                }
+//
+//                // 5. Kolla om ordet följs av en vänsterparentes '('
+//                // Om det gör det, är det ett metodanrop (t.ex. 'equals'), inte en variabel.
+//                int end = idMatcher.end();
+//                boolean isMethodCall = false;
+//                for (int i = end; i < condition.length(); i++) {
+//                    char c = condition.charAt(i);
+//                    if (c == '(') {
+//                        isMethodCall = true;
+//                        break;
+//                    } else if (!Character.isWhitespace(c)) {
+//                        // Vi hittade ett annat tecken (t.ex. '.' eller '==') innan en eventuell parentes
+//                        break;
+//                    }
+//                }
+//
+//                // Om det var en metod, hoppa till nästa matchning i while-loopen
+//                if (isMethodCall) {
+//                    continue;
+//                }
+//
+//                // Har vi passerat alla filter ovan? Då har vi hittat vår variabel!
+//                return match;
+//            }
+//        }
+//
+//        return "Ingen variabel hittades";
+//    }
 
 //    public static String replaceIndexVariable(String code, String indexVariable ,int i){
 //        System.out.println("replaceIndexVariable code: '"+code+"', indexVariable: '"+indexVariable+"', i:"+i);
@@ -334,88 +334,88 @@ public class VisualFrame extends JDialog {
     }
 
 //-----------------------------------
-    public static String replaceIndexVariable(String code, String replacement) {
-        // 1. Hitta variabelnamnet (t.ex. "i")
-        Pattern pattern = Pattern.compile("for\\s*\\(\\s*int\\s+(\\w+)");
-        Matcher matcher = pattern.matcher(code);
-
-        String varName = "";
-        if (matcher.find()) {
-            varName = matcher.group(1);
-        } else {
-            return code; // Ingen loop hittad
-        }
-
-        // 2. Hitta positionerna för for-loopens parenteser
-        int forIndex = code.indexOf("for");
-        int openParen = code.indexOf("(", forIndex);
-        int closeParen = code.indexOf(")", openParen);
-
-        // Om vi inte hittar parenteserna, avbryt
-        if (openParen == -1 || closeParen == -1) {
-            return code;
-        }
-
-        // 3. Extrahera innehållet i for-loopen: "int i=0; i < 20; i++"
-        String forContent = code.substring(openParen + 1, closeParen);
-
-        // Dela upp innehållet vid semikolon
-        String[] forParts = forContent.split(";");
-
-        StringBuilder sb = new StringBuilder();
-
-        // --- BYGG IHOP KODEN IGEN ---
-        // A. Lägg till allt INNAN for-loopen (t.ex. "fill(255...  for ")
-        sb.append(code.substring(0, openParen + 1));
-
-        // B. Hantera for-loopens tre delar
-        if (forParts.length == 3) {
-            // Del 1: "int i=0" -> Behålls original (byts INTE ut)
-            sb.append(forParts[0]).append(";");
-
-            // Del 2: " i < 20" -> Här byter vi ut variabeln!
-            // Vi använder vår hjälpmetod för att byta ut säkert
-            sb.append(replaceSafe(forParts[1], varName, replacement)).append(";");
-
-            // Del 3: " i++" -> Behålls original (byts INTE ut)
-            sb.append(forParts[2]);
-        } else {
-            // Om loopen ser konstig ut, lägg bara tillbaka den som den var
-            sb.append(forContent);
-        }
-
-        // C. Lägg till parentesen som avslutar loopen
-        sb.append(")");
-
-        // D. Hantera resten av koden (loop-kroppen)
-        // Här byter vi ut alla förekomster av 'i', men skyddar textsträngar.
-        String body = code.substring(closeParen + 1);
-        sb.append(replaceSafe(body, varName, replacement));
-
-        return sb.toString();
-    }
+//    public static String replaceIndexVariable(String code, String replacement) {
+//        // 1. Hitta variabelnamnet (t.ex. "i")
+//        Pattern pattern = Pattern.compile("for\\s*\\(\\s*int\\s+(\\w+)");
+//        Matcher matcher = pattern.matcher(code);
+//
+//        String varName = "";
+//        if (matcher.find()) {
+//            varName = matcher.group(1);
+//        } else {
+//            return code; // Ingen loop hittad
+//        }
+//
+//        // 2. Hitta positionerna för for-loopens parenteser
+//        int forIndex = code.indexOf("for");
+//        int openParen = code.indexOf("(", forIndex);
+//        int closeParen = code.indexOf(")", openParen);
+//
+//        // Om vi inte hittar parenteserna, avbryt
+//        if (openParen == -1 || closeParen == -1) {
+//            return code;
+//        }
+//
+//        // 3. Extrahera innehållet i for-loopen: "int i=0; i < 20; i++"
+//        String forContent = code.substring(openParen + 1, closeParen);
+//
+//        // Dela upp innehållet vid semikolon
+//        String[] forParts = forContent.split(";");
+//
+//        StringBuilder sb = new StringBuilder();
+//
+//        // --- BYGG IHOP KODEN IGEN ---
+//        // A. Lägg till allt INNAN for-loopen (t.ex. "fill(255...  for ")
+//        sb.append(code.substring(0, openParen + 1));
+//
+//        // B. Hantera for-loopens tre delar
+//        if (forParts.length == 3) {
+//            // Del 1: "int i=0" -> Behålls original (byts INTE ut)
+//            sb.append(forParts[0]).append(";");
+//
+//            // Del 2: " i < 20" -> Här byter vi ut variabeln!
+//            // Vi använder vår hjälpmetod för att byta ut säkert
+//            sb.append(replaceSafe(forParts[1], varName, replacement)).append(";");
+//
+//            // Del 3: " i++" -> Behålls original (byts INTE ut)
+//            sb.append(forParts[2]);
+//        } else {
+//            // Om loopen ser konstig ut, lägg bara tillbaka den som den var
+//            sb.append(forContent);
+//        }
+//
+//        // C. Lägg till parentesen som avslutar loopen
+//        sb.append(")");
+//
+//        // D. Hantera resten av koden (loop-kroppen)
+//        // Här byter vi ut alla förekomster av 'i', men skyddar textsträngar.
+//        String body = code.substring(closeParen + 1);
+//        sb.append(replaceSafe(body, varName, replacement));
+//
+//        return sb.toString();
+//    }
 
     // Hjälpmetod: Byter ut variabeln men undviker textsträngar ("...")
-    private static String replaceSafe(String text, String targetVar, String replacement) {
-        String[] parts = text.split("\"", -1);
-        StringBuilder sb = new StringBuilder();
-
-        for (int j = 0; j < parts.length; j++) {
-            if (j % 2 == 0) {
-                // Förklaring av Regex:
-                // (?<!\+\+|--)\b          <- Får inte föregås av ++ eller --
-                // \btargetVar\b           <- Själva variabelnamnet
-                // (?!(\s*(\+\+|--|=)))    <- Får inte följas av ++, -- eller = (med valfritt mellanrum)
-                String regex = "(?<!\\+\\+|--)\\b" + targetVar + "\\b(?!(\\s*(\\+\\+|--|=)))";
-
-                parts[j] = parts[j].replaceAll(regex, replacement);
-            }
-            sb.append(parts[j]);
-            if (j < parts.length - 1) {
-                sb.append("\"");
-            }
-        }
-        return sb.toString();
-    }
-
+//    private static String replaceSafe(String text, String targetVar, String replacement) {
+//        String[] parts = text.split("\"", -1);
+//        StringBuilder sb = new StringBuilder();
+//
+//        for (int j = 0; j < parts.length; j++) {
+//            if (j % 2 == 0) {
+//                // Förklaring av Regex:
+//                // (?<!\+\+|--)\b          <- Får inte föregås av ++ eller --
+//                // \btargetVar\b           <- Själva variabelnamnet
+//                // (?!(\s*(\+\+|--|=)))    <- Får inte följas av ++, -- eller = (med valfritt mellanrum)
+//                String regex = "(?<!\\+\\+|--)\\b" + targetVar + "\\b(?!(\\s*(\\+\\+|--|=)))";
+//
+//                parts[j] = parts[j].replaceAll(regex, replacement);
+//            }
+//            sb.append(parts[j]);
+//            if (j < parts.length - 1) {
+//                sb.append("\"");
+//            }
+//        }
+//        return sb.toString();
+//    }
+//
 }
