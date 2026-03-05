@@ -22,6 +22,7 @@ import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
@@ -47,8 +48,11 @@ public class VisualFrame extends JDialog {
     JTextArea debugArea = new JTextArea("i:?");
 //    JEditorPane origCodeArea = new JEditorPane();
     JTextPane origCodeArea = new JTextPane();
+    JScrollPane origCodeScroll = new JScrollPane(origCodeArea);
     JTextPane code1Area = new JTextPane();
+    JScrollPane code1Scroll = new JScrollPane(code1Area);
     JTextPane code2Area = new JTextPane();
+    JScrollPane code2Scroll = new JScrollPane(code2Area);
     PVRowList rowList = new PVRowList();
 
     //JButton nextButton = new JButton("Nästa");
@@ -82,14 +86,14 @@ public class VisualFrame extends JDialog {
         JPanel codePanel = new JPanel();
         codePanel.setLayout(new BoxLayout(codePanel, BoxLayout.Y_AXIS));
         debugArea.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), indexVariabelBorder));
-        origCodeArea.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), origCodeBorder));
+        origCodeScroll.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), origCodeBorder));
 
 //        code1Area.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED),new TitledBorder("Först byter vi ut varabeln med dess värde")));
-        code1Area.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), new TitledBorder("Först byter vi ut varabeln med dess innehåll")));
-        code2Area.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), new TitledBorder("Och sedan räknar vi ut uttrycket")));
-        codePanel.add(origCodeArea);
-        codePanel.add(code1Area);
-        codePanel.add(code2Area);
+        code1Scroll.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), new TitledBorder("Först byter vi ut varabeln med dess innehåll")));
+        code2Scroll.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), new TitledBorder("Och sedan räknar vi ut uttrycket")));
+        codePanel.add(origCodeScroll);
+        codePanel.add(code1Scroll);
+        codePanel.add(code2Scroll);
         add(codePanel, BorderLayout.CENTER);
         origCodeArea.setEditable(false);
         code1Area.setEditable(false);

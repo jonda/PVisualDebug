@@ -10,6 +10,8 @@ import PVisualTool.ExpressionExtractor.TempVarsAndCodeLine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
 
 /**
@@ -181,38 +183,60 @@ public class CodeRow {
                 allVars.addAll(rowVars.get(i));
             }
         }
-        System.out.println("allVars = " + allVars + ", row: " + row);
     
+        // Do NOT trim the row, to preserve indentation.
+    
+        // Pattern for for-loops: for(init; condition; update)
+        Pattern forPattern = Pattern.compile("^(\\s*for\\s*\\([^;]*;)([^;]*)(;[^)]*\\).*)$");
+        Matcher forMatcher = forPattern.matcher(row);
+        if (forMatcher.find()) {
+            String part1 = forMatcher.group(1);
+            String condition = forMatcher.group(2);
+            String part2 = forMatcher.group(3);
+            
+            String processedCondition = buildStringExpression(condition, allVars, null);
+            
+            String finalExpr = "\"" + escape(part1) + "\" + " + processedCondition + " + \"" + escape(part2) + "\"";
+            return cleanupStringExpression(finalExpr);
+        }
+    
+        // Pattern for if/while: if(condition) or while(condition)
+        Pattern ifWhilePattern = Pattern.compile("^(\\s*(?:if|while)\\s*\\()([^)]*)(\\).*)$");
+        Matcher ifWhileMatcher = ifWhilePattern.matcher(row);
+        if (ifWhileMatcher.find()) {
+            String part1 = ifWhileMatcher.group(1);
+            String condition = ifWhileMatcher.group(2);
+            String part2 = ifWhileMatcher.group(3);
+    
+            String processedCondition = buildStringExpression(condition, allVars, null);
+    
+            String finalExpr = "\"" + escape(part1) + "\" + " + processedCondition + " + \"" + escape(part2) + "\"";
+            return cleanupStringExpression(finalExpr);
+        }
+    
+        // Fallback for simple assignments etc.
         String assignedVar = null;
         String[] parts = row.split("=");
-        if (parts.length > 1) {
+        if (parts.length > 1 && !row.matches(".*[<>=!]=.*")) {
             String lhs = parts[0].trim();
             String[] tokens = lhs.split("\\s+");
             assignedVar = tokens[tokens.length - 1];
         }
+        return buildStringExpression(row, allVars, assignedVar);
+    }
     
+    private String buildStringExpression(String input, List<CodeRowVar> allVars, String assignedVar) {
         StringBuilder result = new StringBuilder("\"");
         boolean inString = false;
         boolean inCharLiteral = false;
-        boolean inLineComment = false;
     
-        for (int i = 0; i < row.length(); i++) {
-            char c = row.charAt(i);
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
     
-            if (!inString && !inCharLiteral && c == '/' && i + 1 < row.length() && row.charAt(i + 1) == '/') {
-                inLineComment = true;
-            }
-    
-            if (inLineComment) {
-                appendEscaped(result, c);
-                continue;
-            }
-    
-            // This logic is to avoid replacing variables inside source string literals
-            if (c == '"' && (i == 0 || row.charAt(i - 1) != '\\')) {
+            if (c == '"' && (i == 0 || input.charAt(i - 1) != '\\')) {
                 inString = !inString;
             }
-            if (c == '\'' && (i == 0 || row.charAt(i - 1) != '\\')) {
+            if (c == '\'' && (i == 0 || input.charAt(i - 1) != '\\')) {
                 inCharLiteral = !inCharLiteral;
             }
     
@@ -220,8 +244,8 @@ public class CodeRow {
                 StringBuilder identifier = new StringBuilder();
                 identifier.append(c);
                 int j = i + 1;
-                while (j < row.length() && Character.isJavaIdentifierPart(row.charAt(j))) {
-                    identifier.append(row.charAt(j));
+                while (j < input.length() && Character.isJavaIdentifierPart(input.charAt(j))) {
+                    identifier.append(input.charAt(j));
                     j++;
                 }
                 String idString = identifier.toString();
@@ -241,37 +265,41 @@ public class CodeRow {
                 } else {
                     result.append(idString);
                 }
-                i = j - 1;
+                i = j - 1; 
             } else {
-                appendEscaped(result, c);
+                result.append(escapeChar(c));
             }
         }
     
         result.append("\"");
-    
-        String finalString = result.toString().replace("+\"\"+", "+");
-        if (finalString.startsWith("\"\"+")) {
-            finalString = finalString.substring(3);
-        }
-        if (finalString.endsWith("+\"\"")) {
-            finalString = finalString.substring(0, finalString.length() - 3);
-        }
-        if (finalString.isEmpty()) {
-            finalString = "\"\"";
-        }
-    
-        System.out.println("<-getRowWithInsertedOrigVariables resultString = " + finalString);
-        return finalString;
+        return cleanupStringExpression(result.toString());
     }
     
-    private void appendEscaped(StringBuilder builder, char c) {
+    private String escape(String text) {
+        return text.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+    
+    private String escapeChar(char c) {
         if (c == '"') {
-            builder.append("\\\"");
-        } else if (c == '\\') {
-            builder.append("\\\\");
-        } else {
-            builder.append(c);
+            return "\\\"";
         }
+        if (c == '\\') {
+            return "\\\\";
+        }
+        return String.valueOf(c);
+    }
+    
+    private String cleanupStringExpression(String expr) {
+        String cleaned = expr.replace("+\"\"+", "+");
+        if (cleaned.equals("\"\"")) return cleaned;
+    
+        if (cleaned.startsWith("\"\"+")) {
+            cleaned = cleaned.substring(3);
+        }
+        if (cleaned.endsWith("+\"\"")) {
+            cleaned = cleaned.substring(0, cleaned.length() - 3);
+        }
+        return cleaned.isEmpty() ? "\"\"" : cleaned;
     }
 
     public static void addVars(String row, int blockLevel, ArrayList<CodeRowVar> rowBlockVars) {
@@ -310,7 +338,7 @@ public class CodeRow {
 
         } else {
             ret = getExtraLines()
-                    + row +"\n"  //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
+                    + row   //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
                     + getShowLine();
         }
         return ret;
