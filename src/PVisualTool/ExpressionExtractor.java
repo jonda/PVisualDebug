@@ -12,7 +12,7 @@ public class ExpressionExtractor {
         private String modifiedLine;
         private List<String> tempVariableDeclarations;
         private List<String> tempVariableNames;
-        private boolean isControlFlow; // NYTT: Håller koll på om det är for/if/while
+        private boolean isControlFlow;
 
         public TempVarsAndCodeLine(String modifiedLine, List<String> tempVariableDeclarations, List<String> tempVariableNames, boolean isControlFlow) {
             this.modifiedLine = modifiedLine;
@@ -29,12 +29,10 @@ public class ExpressionExtractor {
             String escapedLine = modifiedLine.replace("\\", "\\\\").replace("\"", "\\\"");
             String debugExpr = "\"" + escapedLine + "\"";
             
-            // 1. Ersätt de skapade temp-variablerna (om det finns några)
             for (String varName : tempVariableNames) {
                 debugExpr = debugExpr.replace(varName, "\" + " + varName + " + \"");
             }
 
-            // 2. NYTT: Om det är if/while/for, extrahera variabler från jämförelsen och injicera
             if (isControlFlow) {
                 String firstWord = modifiedLine.trim().split("\\W+", 2)[0];
                 
@@ -43,9 +41,8 @@ public class ExpressionExtractor {
                     int secondSemi = debugExpr.indexOf(';', firstSemi + 1);
                     if (firstSemi != -1 && secondSemi != -1) {
                         String part1 = debugExpr.substring(0, firstSemi + 1);
-                        String part2 = debugExpr.substring(firstSemi + 1, secondSemi); // Jämförelsen
+                        String part2 = debugExpr.substring(firstSemi + 1, secondSemi); 
                         String part3 = debugExpr.substring(secondSemi);
-                        
                         debugExpr = part1 + injectVariablesIntoString(part2) + part3;
                     }
                 } else if (firstWord.equals("if") || firstWord.equals("while")) {
@@ -53,31 +50,26 @@ public class ExpressionExtractor {
                     int lastParen = debugExpr.lastIndexOf(')');
                     if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
                         String part1 = debugExpr.substring(0, firstParen + 1);
-                        String part2 = debugExpr.substring(firstParen + 1, lastParen); // Jämförelsen
+                        String part2 = debugExpr.substring(firstParen + 1, lastParen); 
                         String part3 = debugExpr.substring(lastParen);
-                        
                         debugExpr = part1 + injectVariablesIntoString(part2) + part3;
                     }
                 }
             }
             
-            // Städa upp tomma strängkonkateneringar
             debugExpr = debugExpr.replace(" + \"\"", "");
             if (debugExpr.startsWith("\"\" + ")) debugExpr = debugExpr.substring(5);
             return debugExpr;
         }
 
-        // Hjälpmetod för att injicera värden istället för variabelnamn i en specifik delsträng
         private String injectVariablesIntoString(String codePart) {
             Matcher m = Pattern.compile("\\b[a-zA-Z_]\\w*\\b").matcher(codePart);
-            // Ignorera nyckelord och vanliga metodnamn som vi inte vill skriva ut värdet av
             List<String> ignoreList = List.of("true", "false", "null", "int", "boolean", "double", "float", "long", "String", "new", "equals", "length", "size");
             
             StringBuffer sb = new StringBuffer();
             while (m.find()) {
                 String word = m.group();
                 if (!ignoreList.contains(word)) {
-                    // Citat-magi: "bryter" strängen, lägger in variabeln, och öppnar strängen igen
                     m.appendReplacement(sb, Matcher.quoteReplacement("\" + " + word + " + \""));
                 } else {
                     m.appendReplacement(sb, word);
@@ -111,6 +103,36 @@ public class ExpressionExtractor {
         return false;
     }
 
+    // --- NY METOD: Smart uppdelning av argument som ignorerar inre kommatecken ---
+    private List<String> splitArguments(String argsString) {
+        List<String> args = new ArrayList<>();
+        int parenDepth = 0;
+        StringBuilder currentArg = new StringBuilder();
+
+        for (char c : argsString.toCharArray()) {
+            if (c == '(') {
+                parenDepth++;
+                currentArg.append(c);
+            } else if (c == ')') {
+                parenDepth--;
+                currentArg.append(c);
+            } else if (c == ',' && parenDepth == 0) {
+                // Vi hittade ett kommatecken på högsta nivån! Spara argumentet.
+                args.add(currentArg.toString().trim());
+                currentArg.setLength(0); // Nollställ för nästa argument
+            } else {
+                currentArg.append(c);
+            }
+        }
+        
+        // Lägg till det allra sista argumentet (efter sista kommatecknet)
+        if (currentArg.length() > 0) {
+            args.add(currentArg.toString().trim());
+        }
+        
+        return args;
+    }
+
     public TempVarsAndCodeLine extractExpressions(String javaLine, int lineNumber) {
         List<String> tempDecls = new ArrayList<>();
         List<String> tempNames = new ArrayList<>();
@@ -124,8 +146,12 @@ public class ExpressionExtractor {
         
         List<String> controlFlowKeywords = List.of("for", "while", "if", "else", "switch", "catch", "do");
         if (controlFlowKeywords.contains(firstWord)) {
-            // NYTT: Skicka med "true" som sista parameter för att markera att det är ett kontrollflöde
             return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, true);
+        }
+        
+        List<String> declarationKeywords = List.of("public", "private", "protected", "void", "class", "interface", "abstract");
+        if (declarationKeywords.contains(firstWord)) {
+            return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, false);
         }
 
         // 1. Hantera tilldelningar
@@ -155,11 +181,23 @@ public class ExpressionExtractor {
             String methodName = matcher.group(1);
             String arguments = matcher.group(2);
 
-            String[] args = arguments.split(",");
+            // ANVÄNDER DEN NYA METODEN HÄR:
+            List<String> args = splitArguments(arguments);
             List<String> newArgs = new ArrayList<>();
+            
+            boolean isMethodDeclaration = false;
+            for (String arg : args) {
+                if (arg.matches("^[a-zA-Z_][a-zA-Z0-9_\\[\\]<>,]*\\s+[a-zA-Z_][a-zA-Z0-9_]*$")) {
+                    isMethodDeclaration = true;
+                    break;
+                }
+            }
+            
+            if (isMethodDeclaration || workingLine.endsWith("{")) {
+                return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, false);
+            }
 
             for (String arg : args) {
-                arg = arg.trim();
                 if (!arg.isEmpty()) {
                     if (isLiteral(arg)) {
                         newArgs.add(arg); 
@@ -182,24 +220,17 @@ public class ExpressionExtractor {
     private String getNextTemp(int lineNumber) {
         return "temp_" + lineNumber + "_" + (tempCounter++);
     }
+    
+
 
     // --- Testkörning ---
     public static void main(String[] args) {
         ExpressionExtractor extractor = new ExpressionExtractor();
         
-        System.out.println("--- Test 1: For-loop ---");
-        TempVarsAndCodeLine res1 = extractor.extractExpressions("for(int i = 0; i < limit; i++) {", 10);
-        System.out.println("Original: " + res1.getModifiedLine());
-        System.out.println("Debug:    " + res1.getDebugStringExpression());
-
-        System.out.println("\n--- Test 2: If-sats ---");
-        TempVarsAndCodeLine res2 = extractor.extractExpressions("    if (age >= minAge && isValid) {", 11);
-        System.out.println("Original: " + res2.getModifiedLine());
-        System.out.println("Debug:    " + res2.getDebugStringExpression());
-        
-        System.out.println("\n--- Test 3: While-loop ---");
-        TempVarsAndCodeLine res3 = extractor.extractExpressions("while(count < 10) {", 12);
-        System.out.println("Original: " + res3.getModifiedLine());
-        System.out.println("Debug:    " + res3.getDebugStringExpression());
+        System.out.println("--- Test: Nästlade funktionsanrop ---");
+        // Testar din specifika kodrad
+        TempVarsAndCodeLine res = extractor.extractExpressions("    fill(0, 0, map(d, min, max, 0, 255));", 16);
+        System.out.println("1. Körbar kod:\n" + res.toString());
+        System.out.println("\n2. Debug stränguttryck:\n" + res.getDebugStringExpression());
     }
 }

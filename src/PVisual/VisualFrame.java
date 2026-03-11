@@ -11,14 +11,12 @@ import java.awt.Font;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 import javax.swing.BoxLayout;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -248,50 +246,8 @@ public class VisualFrame extends JDialog {
             rowList.set(new PVRow(rowNr, origCode, code1, code2));
         }
 
-        SwingUtilities.invokeLater(new ShowCode(rowNr, variableString, rowList, rowList.getCode1(), rowList.getCode2(), ic));
-        //SwingUtilities.invokeLater(new ShowCode(debug, origCode, code1, code2, ic));
-
-//        if (origCode.contains("(")) {
-//            ;
-//            if (type == BlockType.FOR) {
-//                lastForBlock = origCode;
-//                indexVariable = findIndexVariable(origCode);
-//                code1 = replaceIndexVariable(origCode, i + "");
-//            } else {
-//                indexVariable = extractVariable(origCode);
-//                code1 = replaceSafe(origCode, indexVariable, i + "");
-//            }
-//            indexVariabelBorder.setTitle(type.getVariabelBeteckning());
-//            origCodeBorder.setTitle(type.getFullName() + "ens kod");
-//            System.out.println("indexVariable: " + indexVariable + "=" + i);
-//            System.out.println("code1 = " + code1);
-//            code2 = CodeEvaluator.processCode(origCode, indexVariable, i);
-//            System.out.println("code2 = " + code2);
-//            debug = indexVariable + ":" + i;
-        ////                    + "\n"
-////                    + code1
-////                    + "\n\n\n"
-////                    + code2;
-//
-//        } else {
-//            System.out.println("i = " + i + ", DO_NOT_SHOW_I = " + DO_NOT_SHOW_I);
-//            if (i != DO_NOT_SHOW_I) {
-//                debugArea.setText(origCode + ": " + i);
-//            } else {
-//                debugArea.setText("");
-//            }
-//        }
-//
-//            debugArea.setText(debug);
-//            code1Area.setText(code1);
-//            code2Area.setText(code2);
-
-//        f.setLocation(pVisual.frameX, pVisual.frameY);
-//        pVisual.frameX += width;
-//        if (pVisual.frameX + width > PVisual.screenWidth) {
-//            pVisual.frameX = 0;
-//            pVisual.frameY += height;
-//        }
+        SwingUtilities.invokeLater(new ShowCode(rowNr, variableString, rowList, ic));
+       
         if (!autoMode) {
             waitForNextButton();
         }
@@ -301,17 +257,15 @@ public class VisualFrame extends JDialog {
 
         String debug;
         PVRowList rowList;
-        String code1;
-        String code2;
+
         ImageIcon ic;
         int currRowNr;
 
-        public ShowCode(int currRowNr, String debug, PVRowList rowList, String code1, String code2, ImageIcon ic) {
+        public ShowCode(int currRowNr, String debug, PVRowList rowList, ImageIcon ic) {
             this.currRowNr = currRowNr;
             this.debug = debug;
             this.rowList = rowList;
-            this.code1 = code1;
-            this.code2 = code2;
+
             this.ic = ic;
 
         }
@@ -353,24 +307,7 @@ public class VisualFrame extends JDialog {
 
             imageLabel.setIcon(ic);
 
-//            int endBraceindex = rowList.lastIndexOf('}');
-//            System.out.println("endBraceindex = " + endBraceindex);
-//            int startOfEndLine = rowList.lastIndexOf('\n', endBraceindex);
-//            int endOfEndLine = rowList.indexOf('\n', endBraceindex);
-//            if (endOfEndLine == -1) {
-//                endOfEndLine = rowList.length() - 1;
-//            }
-//            System.out.println("origCode.length() = " + rowList.length());
-//
-//            //origCode = "<pre>"+ origCode.substring(0, startOfEndLine) + "<b>"+origCode.substring(startOfEndLine, endOfEndLine+1)+"</b>"+origCode.substring(endOfEndLine+1)+"</pre>";
-//            System.out.println("origCode = " + rowList);
-//            origCodeArea.setText(rowList);
-            ////            origCodeArea.setSelectionColor(Color.red);
-////            origCodeArea.setSelectionStart(startOfEndLine);
-//            System.out.println("startOfEndLine = " + startOfEndLine);
-////            origCodeArea.setSelectionEnd(endOfEndLine);
-//            System.out.println("endOfEndLine = " + endOfEndLine);
-//            System.out.println("origCode.length() = " + rowList.length());
+
         pack();
         }
     }
