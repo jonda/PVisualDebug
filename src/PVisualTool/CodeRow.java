@@ -5,8 +5,6 @@
 package PVisualTool;
 
 import PVisual.BlockType;
-import PVisual.VisualFrame;
-import PVisualTool.ExpressionExtractor.TempVarsAndCodeLine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +20,7 @@ public class CodeRow {
 
     private String row;
 
-    private TempVarsAndCodeLine tempVarsAndCode;
+    private ExpressionExtractor.TempVarsAndCodeLine tempVarsAndCode;
     //private ArrayList<ArrayList<CodeRowVar>> rowGlobalVars = new ArrayList<>();
     private ArrayList<ArrayList<CodeRowVar>> rowVars = new ArrayList<>();
     int blockLevel;

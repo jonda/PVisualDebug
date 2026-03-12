@@ -210,10 +210,15 @@ public class VisualFrame extends JDialog {
 
                     }
                     origDoc.insertString(origDoc.getLength(), sb.toString(), colorCode);
-                    final String code1 = row.getCode1();
+
+                    if (row.getRowNr() == currRowNr + 1 && row.getCode1().isBlank()) {
+                        row.setCode1andCode2toOrigCode();
+                    }
+                    String code1 = row.getCode1();
+                    String code2 = row.getCode2();
                     if (code1 != null && !code1.isBlank()) {
                         code1Doc.insertString(code1Doc.getLength(), row.getRowNr() + " " + code1 + "\n", colorCode);
-                        code2Doc.insertString(code2Doc.getLength(), row.getRowNr() + " " + row.getCode2() + "\n", colorCode);
+                        code2Doc.insertString(code2Doc.getLength(), row.getRowNr() + " " + code2 + "\n", colorCode);
                     }
                 } catch (BadLocationException ex) {
                     JOptionPane.showMessageDialog(VisualFrame.this, "Problem att lägga till i textarea: " + ex.getMessage());

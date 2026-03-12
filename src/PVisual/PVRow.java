@@ -43,7 +43,10 @@ public class PVRow implements Comparable<PVRow>{
         this.code2 = code2;
     }
 
-    
+    void setCode1andCode2toOrigCode(){
+        code1 = origCode;
+        code2 = origCode;
+    }
     
     @Override
     public int compareTo(PVRow t) {

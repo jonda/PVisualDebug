@@ -103,7 +103,18 @@ public class ExpressionExtractor {
         return false;
     }
 
-    // --- NY METOD: Smart uppdelning av argument som ignorerar inre kommatecken ---
+    // --- NY METOD: Svartlista för uttryck vi inte vill bryta ut ---
+    private boolean containsIgnoredTerm(String expr) {
+        // Lägg till klasser/metoder du vill att koden ska ignorera
+        List<String> blackList = List.of("JOptionPane", "Scanner", "System.in", "System.out");
+        for (String ignored : blackList) {
+            if (expr.contains(ignored)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private List<String> splitArguments(String argsString) {
         List<String> args = new ArrayList<>();
         int parenDepth = 0;
@@ -117,9 +128,8 @@ public class ExpressionExtractor {
                 parenDepth--;
                 currentArg.append(c);
             } else if (c == ',' && parenDepth == 0) {
-                // Vi hittade ett kommatecken på högsta nivån! Spara argumentet.
                 args.add(currentArg.toString().trim());
-                currentArg.setLength(0); // Nollställ för nästa argument
+                currentArg.setLength(0);
             } else {
                 currentArg.append(c);
             }
@@ -162,7 +172,8 @@ public class ExpressionExtractor {
 
             if (rightSide.endsWith(";")) rightSide = rightSide.substring(0, rightSide.length() - 1);
 
-            if (isLiteral(rightSide)) {
+            // --- NY KOLL: Strunta i högersidan om den innehåller svartlistade ord ---
+            if (isLiteral(rightSide) || containsIgnoredTerm(rightSide)) {
                 return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, false);
             }
 
@@ -181,7 +192,6 @@ public class ExpressionExtractor {
             String methodName = matcher.group(1);
             String arguments = matcher.group(2);
 
-            // ANVÄNDER DEN NYA METODEN HÄR:
             List<String> args = splitArguments(arguments);
             List<String> newArgs = new ArrayList<>();
             
@@ -199,7 +209,8 @@ public class ExpressionExtractor {
 
             for (String arg : args) {
                 if (!arg.isEmpty()) {
-                    if (isLiteral(arg)) {
+                    // --- NY KOLL: Strunta i argument om de innehåller svartlistade ord ---
+                    if (isLiteral(arg) || containsIgnoredTerm(arg)) {
                         newArgs.add(arg); 
                     } else {
                         String tempName = getNextTemp(lineNumber);
@@ -220,17 +231,19 @@ public class ExpressionExtractor {
     private String getNextTemp(int lineNumber) {
         return "temp_" + lineNumber + "_" + (tempCounter++);
     }
-    
-
 
     // --- Testkörning ---
     public static void main(String[] args) {
         ExpressionExtractor extractor = new ExpressionExtractor();
         
-        System.out.println("--- Test: Nästlade funktionsanrop ---");
-        // Testar din specifika kodrad
-        TempVarsAndCodeLine res = extractor.extractExpressions("    fill(0, 0, map(d, min, max, 0, 255));", 16);
-        System.out.println("1. Körbar kod:\n" + res.toString());
-        System.out.println("\n2. Debug stränguttryck:\n" + res.getDebugStringExpression());
+        System.out.println("--- Test: Ignorera interaktiva anrop ---");
+        // Här är din kodrad!
+        TempVarsAndCodeLine res = extractor.extractExpressions("a = int(JOptionPane.showInputDialog(\"ange a\"));", 9);
+        System.out.println("Körbar kod:\n" + res.toString());
+        System.out.println("Antal temp-variabler skapade: " + res.getTempVariableNames().size());
+        
+        System.out.println("\n--- Test: Normalt funktionsanrop ---");
+        TempVarsAndCodeLine res2 = extractor.extractExpressions("a = Math.max(b, c);", 10);
+        System.out.println("Körbar kod:\n" + res2.toString());
     }
 }
