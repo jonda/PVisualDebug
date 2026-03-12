@@ -5,13 +5,27 @@
 package PVisual;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  *
  * @author dahjon
  */
 public class PVRowList extends ArrayList<PVRow> {
+    
+    public void setCode(String... code){
+        clear();
+        //String [] codeArr = code.split("\n");
+        for (int i = 0; i < code.length; i++) {
+            String rowString = code[i];
+            System.out.println("PVRowList i:"+i+ ": rowString = " + rowString);
+            add(new PVRow((i+1), rowString, "", ""));
+        }
+        
+    }
+    
     
     void set(PVRow row) {
         removeRowIfExists(row.getRowNr());
@@ -61,6 +75,14 @@ public class PVRowList extends ArrayList<PVRow> {
             sb.append('\n');
         }
         return sb.toString();
+    }
+
+    void setDebugInfo(int rowNr, String code1, String code2) {
+        int i = rowNr-1;
+        PVRow row = get(i);
+        row.setDebugInfo(rowNr, code1, code2);
+        
+        
     }
     
     

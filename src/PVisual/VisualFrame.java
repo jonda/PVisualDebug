@@ -53,6 +53,10 @@ public class VisualFrame extends JDialog {
     JScrollPane code2Scroll = new JScrollPane(code2Area);
     PVRowList rowList = new PVRowList();
 
+    public PVRowList getRowList() {
+        return rowList;
+    }
+
     //JButton nextButton = new JButton("Nästa");
 //        JEditTextArea debugLabel = new JEditTextArea(new PdeTextAreaDefaults(),
 //                             new PdeInputHandler());
@@ -144,110 +148,19 @@ public class VisualFrame extends JDialog {
         return lastIndex;
     }
 
-    public static void main(String[] args) {
-        // --- Testfall ---
-
-//        // Krav 1: Ska fungera på både if och while
-//        System.out.println(extractVariable("if(a < 5)"));                  // Output: a
-//        System.out.println(extractVariable("while ( ! isRunning )"));      // Output: isRunning
-//
-//        // Krav 2: Variabeln på höger sida
-//        System.out.println(extractVariable("if(5 < b)"));                  // Output: b
-//
-//        // Komplexa fall med metoder och strängar
-//        System.out.println(extractVariable("while(\"hej\".equals(s))"));   // Output: s
-//        System.out.println(extractVariable("if(true == minVariabel)"));    // Output: minVariabel
-//        System.out.println(extractVariable("if (10.5 >= counter)"));       // Output: counter
-    }
-
-//    /**
-//     * Metod för att extrahera den första variabeln i ett if- eller
-//     * while-villkor.
-//     */
-//    public static String extractVariable(String codeLine) {
-//        // 1. Regex för att hitta både 'while' och 'if'
-//        // (?:while|if) matchar antingen "while" eller "if" utan att spara själva ordet i en egen grupp.
-//        Pattern statementPattern = Pattern.compile("(?:while|if)\\s*\\((.*)\\)");
-//        Matcher statementMatcher = statementPattern.matcher(codeLine);
-//
-//        if (statementMatcher.find()) {
-//            // Hämta hela villkoret inuti parenteserna
-//            String condition = statementMatcher.group(1).trim();
-//
-//            // 2. Rensa bort all text inuti citattecken ("...") 
-//            // Detta förhindrar att vi råkar tro att ett ord inuti en sträng är en variabel.
-//            condition = condition.replaceAll("\".*?\"", "");
-//
-//            // 3. Regex för att hitta giltiga Java-namn (variabler/metoder)
-//            // [a-zA-Z_$] = Måste börja med bokstav, _ eller $
-//            // [a-zA-Z0-9_$]* = Får följas av noll eller fler bokstäver, siffror, _ eller $
-//            Pattern idPattern = Pattern.compile("[a-zA-Z_$][a-zA-Z0-9_$]*");
-//            Matcher idMatcher = idPattern.matcher(condition);
-//
-//            while (idMatcher.find()) {
-//                String match = idMatcher.group();
-//
-//                // 4. Filtrera bort boolean-värden och null
-//                if (match.equals("true") || match.equals("false") || match.equals("null")) {
-//                    continue;
-//                }
-//
-//                // 5. Kolla om ordet följs av en vänsterparentes '('
-//                // Om det gör det, är det ett metodanrop (t.ex. 'equals'), inte en variabel.
-//                int end = idMatcher.end();
-//                boolean isMethodCall = false;
-//                for (int i = end; i < condition.length(); i++) {
-//                    char c = condition.charAt(i);
-//                    if (c == '(') {
-//                        isMethodCall = true;
-//                        break;
-//                    } else if (!Character.isWhitespace(c)) {
-//                        // Vi hittade ett annat tecken (t.ex. '.' eller '==') innan en eventuell parentes
-//                        break;
-//                    }
-//                }
-//
-//                // Om det var en metod, hoppa till nästa matchning i while-loopen
-//                if (isMethodCall) {
-//                    continue;
-//                }
-//
-//                // Har vi passerat alla filter ovan? Då har vi hittat vår variabel!
-//                return match;
-//            }
-//        }
-//
-//        return "Ingen variabel hittades";
-//    }
-//    public static String replaceIndexVariable(String code, String indexVariable ,int i){
-//        System.out.println("replaceIndexVariable code: '"+code+"', indexVariable: '"+indexVariable+"', i:"+i);
-//        String retVal = code.replace(indexVariable, ""+i);
-//        System.out.println("retVal = " + retVal);
-//        return retVal;
-//    }
     //Obs denna funktion kör i en annan tråd
-    public void show(BufferedImage bi, int rowNr, String variableString, String origCode, String code1, String code2) {
-        System.out.println("-> show origCode = " + origCode);
+    public void show(BufferedImage bi, int rowNr, String variableString, String code1, String code2) {
+        System.out.println("-> show rowNr = " + rowNr + ", code1 = " + code1);
         setVisible(true);
         ImageIcon ic = new ImageIcon(bi);
 
         //lastIndex = i;
-        if (origCode == null) {
-            origCode = "i";
-        }
         //String indexVariable = "";
         //String debug = "";
-        if (origCode.contains("\n")) {
-            String[] arr = origCode.split("\n");
-            rowList.set(new PVRow(rowNr, arr[0], code1, code2));
-            rowList.set(new PVRow(rowNr + 1, arr[1], arr[1], arr[1]));
-
-        } else {
-            rowList.set(new PVRow(rowNr, origCode, code1, code2));
-        }
+        rowList.setDebugInfo(rowNr, code1, code2);
 
         SwingUtilities.invokeLater(new ShowCode(rowNr, variableString, rowList, ic));
-       
+
         if (!autoMode) {
             waitForNextButton();
         }
@@ -297,18 +210,19 @@ public class VisualFrame extends JDialog {
 
                     }
                     origDoc.insertString(origDoc.getLength(), sb.toString(), colorCode);
-                    code1Doc.insertString(code1Doc.getLength(), row.getRowNr()+ " "+row.getCode1()+"\n", colorCode);
-                    code2Doc.insertString(code2Doc.getLength(), row.getRowNr()+ " "+row.getCode2()+"\n",colorCode);
+                    final String code1 = row.getCode1();
+                    if (code1 != null && !code1.isBlank()) {
+                        code1Doc.insertString(code1Doc.getLength(), row.getRowNr() + " " + code1 + "\n", colorCode);
+                        code2Doc.insertString(code2Doc.getLength(), row.getRowNr() + " " + row.getCode2() + "\n", colorCode);
+                    }
                 } catch (BadLocationException ex) {
                     JOptionPane.showMessageDialog(VisualFrame.this, "Problem att lägga till i textarea: " + ex.getMessage());
                 }
             }
 
-
             imageLabel.setIcon(ic);
 
-
-        pack();
+            pack();
         }
     }
 

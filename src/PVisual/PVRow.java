@@ -37,6 +37,12 @@ public class PVRow implements Comparable<PVRow>{
         return code2;
     }
 
+    public void setDebugInfo(int rowNr,  String code1, String code2) {
+        this.rowNr = rowNr;
+        this.code1 = code1;
+        this.code2 = code2;
+    }
+
     
     
     @Override

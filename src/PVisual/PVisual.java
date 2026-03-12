@@ -79,15 +79,20 @@ public class PVisual {
 //        show(code, i, BlockType.FOR);
 //    }
 
-    public void show(int rowNr, String variableString, String origCode, String code1, String code2) {
+    public void show(int rowNr, String variableString, String code1, String code2) {
         PImage sketchImage = parent.get();
         BufferedImage bi = (BufferedImage) sketchImage.getNative();
-        vf.show(bi,rowNr, variableString,    origCode,  code1,  code2);
+        vf.show(bi,rowNr, variableString,    code1,  code2);
         //vf.setVisible(true);
         if (delayValue!=-1) {
             parent.delay(delayValue);
         }
 
+    }
+    
+  
+    public void setCode(String... code){
+        vf.getRowList().setCode(code);
     }
     
 }

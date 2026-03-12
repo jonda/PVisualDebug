@@ -152,15 +152,11 @@ public class CodeRow {
     }
 
     String getShowLine() {
-        StringBuilder ret = new StringBuilder("pv.show(");
+        StringBuilder ret = new StringBuilder();
+        ret.append("pv.show(");
         ret.append(rowNr);
         ret.append(",");
         ret.append(getVariablesString());
-        ret.append(", \"");
-        ret.append(getEscapedRow());
-        ret.append("\"");
-        ret.append(getNextLineToShow());
-        ret.append("");
         ret.append(", ");
         ret.append(getRowWithInsertedOrigVariables());
         ret.append(", ");
@@ -338,7 +334,7 @@ public class CodeRow {
 
         } else {
             ret = getExtraLines()
-                    + row   //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
+                    + row  + "\n"  //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
                     + getShowLine();
         }
         return ret;

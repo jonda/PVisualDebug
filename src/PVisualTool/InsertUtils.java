@@ -17,49 +17,11 @@ public class InsertUtils {
 
     public final static String START_OF_FUNCTION = "pv.show";
     public final static String REMOVE_MESSAGE = " // Line will be removed when PVisualConfig is closed\n";
-    public final static String IMPORT_LINE = "import PVisual.*;" + REMOVE_MESSAGE;
     final static Pattern IMPORT_PATTERN = Pattern.compile("import +PVisual.");
     final static Pattern CREATE_PV_PATTERN = Pattern.compile("PVisual +pv *= *new +PVisual *\\( *this *\\)");
     //final static Pattern REMOVE_PV_PATTERN = 
     //PVisual pv = new PVisual(this);
 
-    static String removePVisualFunctions(String code) {
-        StringBuilder sb = new StringBuilder(code);
-
-        int foundIndex = sb.indexOf(REMOVE_MESSAGE);
-        while (foundIndex >= 0) {
-            int start = getStartOfLine(sb, foundIndex);
-            int end = getStartOfNextLine(sb, foundIndex);
-            System.out.println("start = " + start + ", end = " + end + ", sb.length() = " + sb.length());
-            System.out.println("sb.substring(start, end): " + sb.substring(start, end));
-            sb.delete(start, end);
-
-            foundIndex = sb.indexOf(REMOVE_MESSAGE, start);
-            System.out.println("foundIndex = " + foundIndex + ", sb.length() = " + sb.length());
-        }
-        return sb.toString();
-
-    }
-
-    static private boolean checkIfAlreadyThere(StringBuilder sb, int origIndex) {
-        System.out.println("->checkIfAlreadyThere:  origIndex = " + origIndex);
-        int startIndex = getStartOfLine(sb, origIndex - 2);
-        int endIndex = getStartOfNextLine(sb, origIndex) - 1;
-
-        if (endIndex == -1) {
-            endIndex = sb.length() - 1;
-        }
-
-        System.out.println("startIndex = " + startIndex + ", endIndex = " + endIndex);
-        System.out.println("sb.length() = " + sb.length());
-        if (endIndex > startIndex) {
-            String line = sb.subSequence(startIndex, endIndex).toString();
-            line = line.trim();
-            System.out.println("line = " + line);
-            return line.startsWith(START_OF_FUNCTION);
-        }
-        return false;
-    }
 
     public static BlockType getBlockType(StringBuilder sb, int origIndex) {
         int startIndex = getStartOfLine(sb, origIndex);
@@ -77,26 +39,11 @@ public class InsertUtils {
 
     public static String insertPVisualFunctions(String code, int delayValue) {
        StringBuilder sb = new StringBuilder();
-       insertImport(sb);
        insertCreatePv(sb, delayValue);
        CodeList cl = new CodeList(code);
        sb.append(cl.getDebugCode());
         
-        
-        //Gamla
-//        StringBuilder sb = new StringBuilder(code);
-//        insertImport(sb);
-//        insertCreatePv(sb, delayValue);
-//        int braceInd = sb.indexOf("{");
-//
-//        while (braceInd > 0) {
-//            int curIndex = handleBlock(code, sb, braceInd);
-//            if (curIndex == -1) {
-//                braceInd = -1;
-//            } else {
-//                braceInd = sb.indexOf("{", curIndex);
-//            }
-//        }
+
         return sb.toString();
     }
 
@@ -112,46 +59,6 @@ public class InsertUtils {
         return "";
 
     }
-//
-//    private static int handleBlock(String code, StringBuilder sb, int braceInd) {
-//        BlockType type = getBlockType(sb, braceInd);
-//        System.out.println("type = " + type);
-//        String indexVariableName = "";
-//
-//        //sb.insert(PrevRowInd+1, "pv.show();\n");
-//        int endBraceIndex = sb.indexOf("}", braceInd);
-//        System.out.println("braceInd = " + braceInd + ", endBraceIndex = " + endBraceIndex);
-//        if (endBraceIndex != -1) {
-//            String blockCode = getEscapedBlockCode(sb, braceInd, endBraceIndex);
-//            if (type == BlockType.FOR) {
-//                indexVariableName = VisualFrame.findIndexVariable(blockCode);
-//            } else if (type == BlockType.WHILE || type == BlockType.IF) {
-//                
-//                indexVariableName = VisualFrame.extractVariable(blockCode);
-//            }
-//            System.out.println("blockCode = '" + blockCode + "' ::end blockCode");
-//            String textToInsert = "  pv.show(\"" + blockCode + "\", " + indexVariableName + ", BlockType." + type.name() + ");" + REMOVE_MESSAGE;
-//            final int lastInBlockIndex = getStartOfLine(sb, endBraceIndex);
-//
-//            if (!checkIfAlreadyThere(sb, lastInBlockIndex)) {
-//                sb.insert(lastInBlockIndex, textToInsert);
-//                endBraceIndex += textToInsert.length();
-//            }
-//            if (type == BlockType.FOR || type == BlockType.WHILE || type == BlockType.IF) {
-//                if (type == BlockType.FOR) {
-//                    textToInsert = "  pv.showAfterFor();" + REMOVE_MESSAGE;
-//                }
-//                final int afterBlockIndex = getStartOfNextLine(sb, endBraceIndex);
-//                System.out.println("afterBlockIndex = " + afterBlockIndex);
-//                if (!checkIfAlreadyThere(sb, afterBlockIndex + 3)) {
-//                    sb.insert(afterBlockIndex, textToInsert);
-//                }
-//                endBraceIndex += textToInsert.length();
-//            }
-//            System.out.println("endBraceIndex = " + endBraceIndex);
-//        }
-//        return endBraceIndex;
-//    }
 
     private static int getStartOfNextLine(StringBuilder sb, int index) {
         int PrevRowInd = sb.indexOf("\n", index) + 1;
@@ -208,14 +115,6 @@ public class InsertUtils {
         System.out.println("res = " + res);
     }
 
-    static void insertImport(StringBuilder sb) {
-
-        Matcher m = IMPORT_PATTERN.matcher(sb);
-
-        if (!m.find()) {
-            sb.insert(0, IMPORT_LINE);
-        }
-    }
 
     static void insertCreatePv(StringBuilder sb, int delayValue) {
 
