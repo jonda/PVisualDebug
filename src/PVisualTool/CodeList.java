@@ -16,10 +16,13 @@ public class CodeList extends ArrayList<CodeRow> {
     int blockLevel = 0;
     private boolean funcMode = false;
     private int lastIndexWithImport = -1;
-    private int sizeOrSetupRow = 0;
+    private int sizeOrSetupRow = -1;
     public final String PV_IMPORT_LINE = "import PVisual.*;\n";
+    int delayValue;
+    boolean sizeOrSetupRowFound = false;
 
-    public CodeList(String code) {
+    public CodeList(String code, int delayValue) {
+        this.delayValue = delayValue;
         ArrayList<ArrayList<CodeRowVar>> rowVars = new ArrayList<>();
         rowVars.add(new ArrayList<>());
         //this.code = code;
@@ -28,10 +31,13 @@ public class CodeList extends ArrayList<CodeRow> {
             String stringRow = stringRowArr[i];
             if (stringRow.trim().startsWith("import ")) {
                 lastIndexWithImport = i;
-                sizeOrSetupRow =i;
-            }
-            if (stringRow.trim().startsWith("size(") || stringRow.trim().startsWith("void setup(")) {
                 sizeOrSetupRow = i;
+            }
+            if (!sizeOrSetupRowFound && (stringRow.trim().startsWith("size(") || stringRow.trim().startsWith("void setup("))) {
+                sizeOrSetupRow = i;
+                sizeOrSetupRowFound = true;
+
+                System.out.println("size eller setup hittad sizeOrSetupRow = " + sizeOrSetupRow + " stringRow: " + stringRow);
             }
             final int rowNr = i + 1;
             System.out.println("BlockLevel vid anrop på rad " + rowNr + ": " + blockLevel + ",rowVars.size(): " + rowVars.size());
@@ -64,49 +70,48 @@ public class CodeList extends ArrayList<CodeRow> {
 //                + "}\n"
 //                + "\n";
 
-        String code = "import javax.swing.JOptionPane;\n"
-                + "size(400, 400);\n"
-                + "int a = 2;\n"
-                + "fill(0,255,255);\n"
-                + "\n"
-                + "while(10>a){\n"
-                + "  //Första whileloopen\n"
-                + "   square(30*a,30*a,30);\n"
-                + "   a = int(JOptionPane.showInputDialog(\"ange a\"));\n"
+//        String code = "import javax.swing.JOptionPane;\n"
+//                + "size(400, 400);\n"
+//                + "int a = 2;\n"
+//                + "fill(0,255,255);\n"
+//                + "\n"
+//                + "while(10>a){\n"
+//                + "  //Första whileloopen\n"
+//                + "   square(30*a,30*a,30);\n"
+//                + "   a = int(JOptionPane.showInputDialog(\"ange a\"));\n"
+//                + "}\n"
+//                + "for (int i=0; i < 10; i++) {\n"
+//                + "  circle(20*i, 20*i, 20+10*i);\n"
+//                + "}\n"
+//                + "\n"
+//                + " a = 14;\n"
+//                + "fill(0,0,255);\n"
+//                + "while(a>5){\n"
+//                + "   square(30*a,30*a,30);\n"
+//                + "   a = a - 1;\n"
+//                + "}\n"
+//                + "fill(255, 0, 0);   \n"
+//                + "\n"
+//                + "int b = 4;\n"
+//                + "if( b > 3 ){\n"
+//                + "   square(20*b,20*b,40*b);\n"
+//                + "   b--;\n"
+//                + "}";
+        String code = "int i = 0;\n"
+                + "void setup() {\n"
+                + "   size(400, 400);\n"
+                + "   \n"
                 + "}\n"
-                + "for (int i=0; i < 10; i++) {\n"
-                + "  circle(20*i, 20*i, 20+10*i);\n"
-                + "}\n"
                 + "\n"
-                + " a = 14;\n"
-                + "fill(0,0,255);\n"
-                + "while(a>5){\n"
-                + "   square(30*a,30*a,30);\n"
-                + "   a = a - 1;\n"
-                + "}\n"
-                + "fill(255, 0, 0);   \n"
-                + "\n"
-                + "int b = 4;\n"
-                + "if( b > 3 ){\n"
-                + "   square(20*b,20*b,40*b);\n"
-                + "   b--;\n"
+                + "void draw() {\n"
+                + "  \n"
+                + "  circle(5*i,5*i,10*i);\n"
+                + "   i=i+1;\n"
+                + "   if(i==10){\n"
+                + "     noLoop();\n"
+                + "   }\n"
                 + "}";
-
-//        String code = "int i = 0;\n" +
-//"void setup() {\n" +
-//"   size(400, 400);\n" +
-//"   \n" +
-//"}\n" +
-//"\n" +
-//"void draw() {\n" +
-//"  \n" +
-//"  circle(5*i,5*i,10*i);\n" +
-//"   i=i+1;\n" +
-//"   if(i==10){\n" +
-//"     noLoop();\n" +
-//"   }\n" +
-//"}";
-        CodeList cl = new CodeList(code);
+        CodeList cl = new CodeList(code, 50);
         final StringBuilder res = cl.getDebugCode();
         System.out.println("res:\n " + res);
 
@@ -121,11 +126,10 @@ public class CodeList extends ArrayList<CodeRow> {
             CodeRow row = this.get(i);
 
             ret.append(row.getEscapedRow());
-            if(i<this.size()-1){
-            ret.append("\",\"");
-            }
-            else {
-            ret.append("\"");
+            if (i < this.size() - 1) {
+                ret.append("\",\"");
+            } else {
+                ret.append("\"");
             }
 //        ret.append(getNextLineToShow());
 
@@ -135,18 +139,24 @@ public class CodeList extends ArrayList<CodeRow> {
     }
 
     public StringBuilder getDebugCode() {
-        System.out.println("->getDebugCode lastIndexWithImport: "+lastIndexWithImport+ ", sizeOrSetupRow: "+sizeOrSetupRow);
+        System.out.println("->getDebugCode lastIndexWithImport: " + lastIndexWithImport + ", sizeOrSetupRow: " + sizeOrSetupRow);
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < this.size(); i++) {
-            if (lastIndexWithImport == i) {
-                s.insert(0, PV_IMPORT_LINE );
-            }
             CodeRow cr = this.get(i);
-            if (sizeOrSetupRow == i) {
-                s.append(getPVCodeLines());
-                System.out.println("getDebugCode i = " + i +", cr = " + cr +", getPVCodeLines() = " + getPVCodeLines());
+            if (lastIndexWithImport == i - 1) {
+                String CREATE_PV_LINE = "PVisual pv = new PVisual(this, " + delayValue + ");\n";
+                s.append(PV_IMPORT_LINE+CREATE_PV_LINE);
+                System.out.println("getDebugCode stoppar in import i = " + i + ",cr = " + cr + ",  getPVCodeLines() = " + getPVCodeLines());
+
             }
-            s.append(cr.getDebugCode(funcMode));
+            String extraInTheMiddle = "";
+            if (sizeOrSetupRow == i) {
+                extraInTheMiddle = getPVCodeLines().toString();
+                System.out.println("getDebugCode stoppar in setCode i = " + i + ",cr = " + cr + ", , getPVCodeLines() = " + getPVCodeLines());
+            }
+            final String debugCode = cr.getDebugCode(funcMode, extraInTheMiddle);
+            System.out.println("debugCode = " + debugCode);
+            s.append(debugCode);
             s.append("//slut på rad" + cr.getRowNr() + "\n");
 
         }
@@ -160,7 +170,7 @@ public class CodeList extends ArrayList<CodeRow> {
             s += "kodrad: " + cr.getRow() + "\n"
                     + "synliga variabler: " + cr.getVariablesString() + "\n"
                     + "showrow: " + cr.getShowLine() + "\n"
-                    + "allt: " + cr.getDebugCode(funcMode);
+                    + "allt: " + cr.getDebugCode(funcMode, "");
 
         }
         return s;

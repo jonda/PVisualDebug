@@ -325,7 +325,7 @@ public class CodeRow {
         }
     }
 
-    String getDebugCode(boolean funcMode) {
+    String getDebugCode(boolean funcMode, String extraIntheMiddle) {
         String ret;
         if (meaningLess || (funcMode && blockLevel == 0)) {
             ret = row + "//tom  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n";
@@ -333,6 +333,7 @@ public class CodeRow {
         } else {
             ret = getExtraLines()
                     + row  + "\n"  //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
+                    + extraIntheMiddle
                     + getShowLine();
         }
         return ret;
@@ -380,7 +381,7 @@ public class CodeRow {
     }
 
     public String toString() {
-        return getVariablesString();
+        return row;
     }
 
     public static void main(String[] args) {
@@ -391,7 +392,7 @@ public class CodeRow {
         vars.add(new ArrayList<>());
         vars.get(0).add(new CodeRowVar("int", "i", "20"));
         CodeRow r = new CodeRow(1, 0, s, vars);
-        System.out.println(r.getDebugCode(false).toString());
+        System.out.println(r.getDebugCode(false, "").toString());
 
     }
 }

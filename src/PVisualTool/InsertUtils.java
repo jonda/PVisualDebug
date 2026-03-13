@@ -39,8 +39,8 @@ public class InsertUtils {
 
     public static String insertPVisualFunctions(String code, int delayValue) {
        StringBuilder sb = new StringBuilder();
-       insertCreatePv(sb, delayValue);
-       CodeList cl = new CodeList(code);
+       //insertCreatePv(sb, delayValue);
+       CodeList cl = new CodeList(code, delayValue);
        sb.append(cl.getDebugCode());
         
 

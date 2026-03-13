@@ -103,43 +103,73 @@ public class ExpressionExtractor {
         return false;
     }
 
-    // --- NY METOD: Svartlista för uttryck vi inte vill bryta ut ---
     private boolean containsIgnoredTerm(String expr) {
-        // Lägg till klasser/metoder du vill att koden ska ignorera
         List<String> blackList = List.of("JOptionPane", "Scanner", "System.in", "System.out");
         for (String ignored : blackList) {
-            if (expr.contains(ignored)) {
-                return true;
-            }
+            if (expr.contains(ignored)) return true;
         }
         return false;
     }
 
+    // --- NY METOD: Delar ENDAST om likhetstecknet är på ytternivå ---
+    private String[] splitTopLevelAssignment(String line) {
+        int depth = 0;
+        boolean inQuotes = false;
+        
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            
+            // Hantera citationstecken (strunta i escapeade tecken som \")
+            if (c == '"' && (i == 0 || line.charAt(i - 1) != '\\')) {
+                inQuotes = !inQuotes;
+            }
+            if (inQuotes) continue;
+
+            if (c == '(') depth++;
+            else if (c == ')') depth--;
+            else if (c == '=' && depth == 0) {
+                // Kolla så det inte är ==, !=, <= eller >=
+                if (i > 0) {
+                    char prev = line.charAt(i - 1);
+                    if (prev == '=' || prev == '!' || prev == '<' || prev == '>') continue;
+                }
+                if (i < line.length() - 1 && line.charAt(i + 1) == '=') continue;
+
+                // Returnerar vänstersidan (inklusive operatören t.ex. '=' eller '+=') och högersidan
+                String leftSide = line.substring(0, i + 1);
+                String rightSide = line.substring(i + 1);
+                return new String[] { leftSide, rightSide };
+            }
+        }
+        return null;
+    }
+
+    // --- UPPDATERAD METOD: Blundar även för kommatecken inuti strängar ---
     private List<String> splitArguments(String argsString) {
         List<String> args = new ArrayList<>();
         int parenDepth = 0;
+        boolean inQuotes = false;
         StringBuilder currentArg = new StringBuilder();
 
-        for (char c : argsString.toCharArray()) {
-            if (c == '(') {
-                parenDepth++;
-                currentArg.append(c);
-            } else if (c == ')') {
-                parenDepth--;
-                currentArg.append(c);
-            } else if (c == ',' && parenDepth == 0) {
-                args.add(currentArg.toString().trim());
-                currentArg.setLength(0);
-            } else {
-                currentArg.append(c);
+        for (int i = 0; i < argsString.length(); i++) {
+            char c = argsString.charAt(i);
+            
+            if (c == '"' && (i == 0 || argsString.charAt(i - 1) != '\\')) {
+                inQuotes = !inQuotes;
             }
+            
+            if (!inQuotes) {
+                if (c == '(') parenDepth++;
+                else if (c == ')') parenDepth--;
+                else if (c == ',' && parenDepth == 0) {
+                    args.add(currentArg.toString().trim());
+                    currentArg.setLength(0);
+                    continue; // Gå till nästa varv i loopen, spara inte kommatecknet
+                }
+            }
+            currentArg.append(c);
         }
-        
-        // Lägg till det allra sista argumentet (efter sista kommatecknet)
-        if (currentArg.length() > 0) {
-            args.add(currentArg.toString().trim());
-        }
-        
+        if (currentArg.length() > 0) args.add(currentArg.toString().trim());
         return args;
     }
 
@@ -164,15 +194,14 @@ public class ExpressionExtractor {
             return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, false);
         }
 
-        // 1. Hantera tilldelningar
-        if (workingLine.contains("=") && !workingLine.contains("==")) {
-            String[] parts = workingLine.split("=", 2);
-            String leftSide = parts[0].trim();
-            String rightSide = parts[1].trim();
+        // 1. Hantera tilldelningar via den nya Top-Level-metoden
+        String[] assignParts = splitTopLevelAssignment(workingLine);
+        if (assignParts != null) {
+            String leftSide = assignParts[0]; // e.g. "int a =" eller "total +="
+            String rightSide = assignParts[1].trim(); // e.g. "b + c;"
 
             if (rightSide.endsWith(";")) rightSide = rightSide.substring(0, rightSide.length() - 1);
 
-            // --- NY KOLL: Strunta i högersidan om den innehåller svartlistade ord ---
             if (isLiteral(rightSide) || containsIgnoredTerm(rightSide)) {
                 return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, false);
             }
@@ -181,7 +210,7 @@ public class ExpressionExtractor {
             tempDecls.add(indentation + "var " + tempName + " = " + rightSide + ";");
             tempNames.add(tempName);
             
-            return new TempVarsAndCodeLine(indentation + leftSide + " = " + tempName + ";", tempDecls, tempNames, false);
+            return new TempVarsAndCodeLine(indentation + leftSide.trim() + " " + tempName + ";", tempDecls, tempNames, false);
         }
 
         // 2. Hantera funktionsanrop
@@ -209,7 +238,6 @@ public class ExpressionExtractor {
 
             for (String arg : args) {
                 if (!arg.isEmpty()) {
-                    // --- NY KOLL: Strunta i argument om de innehåller svartlistade ord ---
                     if (isLiteral(arg) || containsIgnoredTerm(arg)) {
                         newArgs.add(arg); 
                     } else {
@@ -236,14 +264,13 @@ public class ExpressionExtractor {
     public static void main(String[] args) {
         ExpressionExtractor extractor = new ExpressionExtractor();
         
-        System.out.println("--- Test: Ignorera interaktiva anrop ---");
-        // Här är din kodrad!
-        TempVarsAndCodeLine res = extractor.extractExpressions("a = int(JOptionPane.showInputDialog(\"ange a\"));", 9);
+        System.out.println("--- Test: Funktionsanrop med inkrementella argument ---");
+        TempVarsAndCodeLine res = extractor.extractExpressions("    circle(xboll+=speedx, yboll+=speedy, 30);", 18);
         System.out.println("Körbar kod:\n" + res.toString());
-        System.out.println("Antal temp-variabler skapade: " + res.getTempVariableNames().size());
+        System.out.println("\nDebug utskrift:\n" + res.getPrintStatement());
         
-        System.out.println("\n--- Test: Normalt funktionsanrop ---");
-        TempVarsAndCodeLine res2 = extractor.extractExpressions("a = Math.max(b, c);", 10);
+        System.out.println("\n--- Test: Top-Level Tilldelning med += ---");
+        TempVarsAndCodeLine res2 = extractor.extractExpressions("total += a * b;", 20);
         System.out.println("Körbar kod:\n" + res2.toString());
     }
 }
