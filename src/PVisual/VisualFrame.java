@@ -67,7 +67,7 @@ public class VisualFrame extends JDialog {
     int lastIndex = 0;
     String lastForBlock = "";
     int padding = 10;
-    final TitledBorder origCodeBorder = new TitledBorder("Loopens kod:");
+    final TitledBorder origCodeBorder = new TitledBorder("Orginalkod:");
     final TitledBorder indexVariabelBorder = new TitledBorder("Indexvariabel");
 
     public String getLastForBlock() {
@@ -82,20 +82,22 @@ public class VisualFrame extends JDialog {
             autoMode = true;
         }
         setTitle("JVisual");
-        add(imageLabel, BorderLayout.SOUTH);
+        //add(imageLabel, BorderLayout.SOUTH);
         add(debugArea, BorderLayout.NORTH);
 
         JPanel codePanel = new JPanel();
-        codePanel.setLayout(new BoxLayout(codePanel, BoxLayout.Y_AXIS));
+        codePanel.setLayout(new BoxLayout(codePanel, BoxLayout.X_AXIS));
         debugArea.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), indexVariabelBorder));
         origCodeScroll.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), origCodeBorder));
 
 //        code1Area.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED),new TitledBorder("Först byter vi ut varabeln med dess värde")));
         code1Scroll.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), new TitledBorder("Först byter vi ut varabeln med dess innehåll")));
         code2Scroll.setBorder(new CompoundBorder(new EmptyBorder(padding, padding, padding, padding), new TitledBorder("Och sedan räknar vi ut uttrycket")));
+        //add(origCodeScroll, BorderLayout.WEST);
         codePanel.add(origCodeScroll);
         codePanel.add(code1Scroll);
         codePanel.add(code2Scroll);
+        codePanel.add(imageLabel);
         add(codePanel, BorderLayout.CENTER);
         origCodeArea.setEditable(false);
         code1Area.setEditable(false);
@@ -203,6 +205,8 @@ public class VisualFrame extends JDialog {
                 try {
                     SimpleAttributeSet colorCode = new SimpleAttributeSet();
                     StyleConstants.setFontFamily(colorCode, "Courier New Italic");
+                    StyleConstants.setFontSize(colorCode, 12);
+                    
                     if (row.getRowNr() == currRowNr) {
                         StyleConstants.setForeground(colorCode, Color.RED);
                     } else {

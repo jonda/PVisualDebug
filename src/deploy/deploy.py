@@ -1,7 +1,7 @@
 import os
 import shutil
-sketchbook="\\\\SR-Disk-2\\Hem0010\\dahjon\\Documents\\Processing\\";
-
+#sketchbook="\\\\SR-Disk-2\\Hem0010\\dahjon\\Documents\\Processing\\";
+sketchbook = "C:/data/sketchbook/"
 #sketchbook="C:/googledrive/procsketchbook/";
 base=sketchbook+"libraries/PVisual/"
 #os.chdir("../..")
