@@ -12,7 +12,7 @@ public class ExpressionExtractor {
         private String modifiedLine;
         private List<String> tempVariableDeclarations;
         private List<String> tempVariableNames;
-        private List<String> stringTempNames; // NYTT: Håller koll på vilka variabler som är strängar
+        private List<String> stringTempNames; 
         private boolean isControlFlow;
 
         public TempVarsAndCodeLine(String modifiedLine, List<String> tempVariableDeclarations, 
@@ -32,10 +32,8 @@ public class ExpressionExtractor {
             String escapedLine = modifiedLine.replace("\\", "\\\\").replace("\"", "\\\"");
             String debugExpr = "\"" + escapedLine + "\"";
             
-            // NYTT: Omslut variabeln med \" om den identifierats som en sträng!
             for (String varName : tempVariableNames) {
                 if (stringTempNames != null && stringTempNames.contains(varName)) {
-                    // Ersätt variabeln med \" + variabel + \" för att bevara citationstecknen i utskriften
                     debugExpr = debugExpr.replaceAll("\\b" + varName + "\\b", 
                             Matcher.quoteReplacement("\\\"\" + " + varName + " + \"\\\""));
                 } else {
@@ -73,8 +71,10 @@ public class ExpressionExtractor {
             return debugExpr;
         }
 
+        // --- UPPDATERAD METOD ---
         private String injectVariablesIntoString(String codePart) {
-            Matcher m = Pattern.compile("\\b[a-zA-Z_]\\w*\\b").matcher(codePart);
+            // NYTT: (?!\\s*\\() ignorera ord som följs av parenteser (metodanrop)
+            Matcher m = Pattern.compile("\\b[a-zA-Z_]\\w*\\b(?!\\s*\\()").matcher(codePart);
             List<String> ignoreList = List.of("true", "false", "null", "int", "boolean", "double", "float", "long", "String", "new", "equals", "length", "size");
             
             StringBuffer sb = new StringBuffer();
@@ -180,18 +180,16 @@ public class ExpressionExtractor {
     public TempVarsAndCodeLine extractExpressions(String javaLine, int lineNumber) {
         List<String> tempDecls = new ArrayList<>();
         List<String> tempNames = new ArrayList<>();
-        List<String> stringTempNames = new ArrayList<>(); // NYTT
+        List<String> stringTempNames = new ArrayList<>(); 
         
         Matcher indentMatcher = Pattern.compile("^\\s*").matcher(javaLine);
         String indentation = indentMatcher.find() ? indentMatcher.group() : "";
         String workingLine = javaLine.trim();
 
-// --- NY KOLL: Strunta i allt om raden är en kommentar ---
         if (workingLine.startsWith("//") || workingLine.startsWith("/*") || workingLine.startsWith("*")) {
-            System.out.println("extractExpressions hittat kommentar tempDecls = " + tempDecls+", tempNames = " + tempNames);
             return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, stringTempNames, false);
-        }        
-        
+        }
+
         String[] tokens = workingLine.split("\\W+", 2);
         String firstWord = tokens.length > 0 ? tokens[0] : "";
         
@@ -205,7 +203,6 @@ public class ExpressionExtractor {
             return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, stringTempNames, false);
         }
 
-        // 1. Hantera tilldelningar
         String[] assignParts = splitTopLevelAssignment(workingLine);
         if (assignParts != null) {
             String leftSide = assignParts[0];
@@ -221,13 +218,11 @@ public class ExpressionExtractor {
             tempDecls.add(indentation + "var " + tempName + " = " + rightSide + ";");
             tempNames.add(tempName);
             
-            // NYTT: Identifiera om uttrycket är en sträng (innehåller ")
             if (rightSide.contains("\"")) stringTempNames.add(tempName); 
             
             return new TempVarsAndCodeLine(indentation + leftSide.trim() + " " + tempName + ";", tempDecls, tempNames, stringTempNames, false);
         }
 
-        // 2. Hantera funktionsanrop
         Pattern funcPattern = Pattern.compile("([a-zA-Z0-9_]+)\\((.*)\\);?");
         Matcher matcher = funcPattern.matcher(workingLine);
 
@@ -259,7 +254,6 @@ public class ExpressionExtractor {
                         tempDecls.add(indentation + "var " + tempName + " = " + arg + ";");
                         tempNames.add(tempName);
                         
-                        // NYTT: Identifiera om uttrycket är en sträng (innehåller ")
                         if (arg.contains("\"")) stringTempNames.add(tempName);
                         
                         newArgs.add(tempName);
@@ -282,11 +276,11 @@ public class ExpressionExtractor {
     public static void main(String[] args) {
         ExpressionExtractor extractor = new ExpressionExtractor();
         
-        System.out.println("--- Test: Omsluta strängar i debug-loggen ---");
-        // Testar din kodrad
-        TempVarsAndCodeLine res = extractor.extractExpressions("    text(faren+\" grader fahrenheit är \"+cel + \" grader celsius\",10,10, 90,90);", 22);
-        System.out.println("1. Körbar kod:\n" + res.toString());
-        System.out.println("\n2. Genererad print-sats:");
+        System.out.println("--- Test: Ignorera funktionsnamn i if-satser ---");
+        // Testar din if-sats exakt
+        TempVarsAndCodeLine res = extractor.extractExpressions("  if (get(int(bollx), int(bolly))==vit) {", 25);
+        System.out.println("1. Originalrad:\n" + res.getModifiedLine());
+        System.out.println("\n2. Debug utskrift (genererad logg):");
         System.out.println(res.getPrintStatement());
     }
 }

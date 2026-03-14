@@ -42,7 +42,7 @@ public class VisualFrame extends JDialog {
 
     boolean autoMode = false;
 
-    JLabel imageLabel = new JLabel("JVisual");
+    JLabel imageLabel = new JLabel();
     JTextArea debugArea = new JTextArea("i:?");
 //    JEditorPane origCodeArea = new JEditorPane();
     JTextPane origCodeArea = new JTextPane();
