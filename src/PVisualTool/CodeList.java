@@ -31,7 +31,7 @@ public class CodeList extends ArrayList<CodeRow> {
             String stringRow = stringRowArr[i];
             if (stringRow.trim().startsWith("import ")) {
                 lastIndexWithImport = i;
-                sizeOrSetupRow = i;
+                sizeOrSetupRow = i+1;
             }
             if (!sizeOrSetupRowFound && (stringRow.trim().startsWith("size(") || stringRow.trim().startsWith("void setup("))) {
                 sizeOrSetupRow = i;
@@ -70,6 +70,31 @@ public class CodeList extends ArrayList<CodeRow> {
 //                + "}\n"
 //                + "\n";
 
+String code = "// Skapa ett prgram som räknar ut ekvationen x2/200=300, genom att \n" +
+"// först sätta x till noll, och sedan öka x med 0.1 och sedan sätta \n" +
+"// y=x*x/200 och köra så länge som y<300\n" +
+"\n" +
+"size(400, 400);\n" +
+"background(0);\n" +
+"float  x=0;\n" +
+"float y=0;\n" +
+"fill(255,0,0);\n" +
+"noStroke();\n" +
+"while (y<300) {\n" +
+"  y=x*x/200;\n" +
+"  println(x+\", \"+y);\n" +
+"  ellipse(x, height-y, 3, 3);\n" +
+"  x=x+.1;\n" +
+"}";
+//
+//String code = "import javax.swing.*;\n" +
+//"\n" +
+//"String str = JOptionPane.showInputDialog(\"Ange temperatur i fahrenheit \");\n" +
+//"float faren = float(str);\n" +
+//"float cel = (faren-32) * 5.0/9;\n" +
+//"fill(0);\n" +
+//"text(faren+\" grader fahrenheit är \"+cel + \" grader celsius\",10,10, 90,90);\n" +
+//"";
 //        String code = "import javax.swing.JOptionPane;\n"
 //                + "size(400, 400);\n"
 //                + "int a = 2;\n"
@@ -97,20 +122,20 @@ public class CodeList extends ArrayList<CodeRow> {
 //                + "   square(20*b,20*b,40*b);\n"
 //                + "   b--;\n"
 //                + "}";
-        String code = "int i = 0;\n"
-                + "void setup() {\n"
-                + "   size(400, 400);\n"
-                + "   \n"
-                + "}\n"
-                + "\n"
-                + "void draw() {\n"
-                + "  \n"
-                + "  circle(5*i,5*i,10*i);\n"
-                + "   i=i+1;\n"
-                + "   if(i==10){\n"
-                + "     noLoop();\n"
-                + "   }\n"
-                + "}";
+//        String code = "int i = 0;\n"
+//                + "void setup() {\n"
+//                + "   size(400, 400);\n"
+//                + "   \n"
+//                + "}\n"
+//                + "\n"
+//                + "void draw() {\n"
+//                + "  \n"
+//                + "  circle(5*i,5*i,10*i);\n"
+//                + "   i=i+1;\n"
+//                + "   if(i==10){\n"
+//                + "     noLoop();\n"
+//                + "   }\n"
+//                + "}";
         CodeList cl = new CodeList(code, 50);
         final StringBuilder res = cl.getDebugCode();
         System.out.println("res:\n " + res);
@@ -146,7 +171,7 @@ public class CodeList extends ArrayList<CodeRow> {
             if (lastIndexWithImport == i - 1) {
                 String CREATE_PV_LINE = "PVisual pv = new PVisual(this, " + delayValue + ");\n";
                 s.append(PV_IMPORT_LINE+CREATE_PV_LINE);
-                System.out.println("getDebugCode stoppar in import i = " + i + ",cr = " + cr + ",  getPVCodeLines() = " + getPVCodeLines());
+                System.out.println("getDebugCode stoppar in import i = " + i + ",cr = " + cr);
 
             }
             String extraInTheMiddle = "";

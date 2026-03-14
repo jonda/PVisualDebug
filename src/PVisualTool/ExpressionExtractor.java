@@ -12,12 +12,15 @@ public class ExpressionExtractor {
         private String modifiedLine;
         private List<String> tempVariableDeclarations;
         private List<String> tempVariableNames;
+        private List<String> stringTempNames; // NYTT: Håller koll på vilka variabler som är strängar
         private boolean isControlFlow;
 
-        public TempVarsAndCodeLine(String modifiedLine, List<String> tempVariableDeclarations, List<String> tempVariableNames, boolean isControlFlow) {
+        public TempVarsAndCodeLine(String modifiedLine, List<String> tempVariableDeclarations, 
+                                   List<String> tempVariableNames, List<String> stringTempNames, boolean isControlFlow) {
             this.modifiedLine = modifiedLine;
             this.tempVariableDeclarations = tempVariableDeclarations;
             this.tempVariableNames = tempVariableNames;
+            this.stringTempNames = stringTempNames;
             this.isControlFlow = isControlFlow;
         }
 
@@ -29,8 +32,16 @@ public class ExpressionExtractor {
             String escapedLine = modifiedLine.replace("\\", "\\\\").replace("\"", "\\\"");
             String debugExpr = "\"" + escapedLine + "\"";
             
+            // NYTT: Omslut variabeln med \" om den identifierats som en sträng!
             for (String varName : tempVariableNames) {
-                debugExpr = debugExpr.replace(varName, "\" + " + varName + " + \"");
+                if (stringTempNames != null && stringTempNames.contains(varName)) {
+                    // Ersätt variabeln med \" + variabel + \" för att bevara citationstecknen i utskriften
+                    debugExpr = debugExpr.replaceAll("\\b" + varName + "\\b", 
+                            Matcher.quoteReplacement("\\\"\" + " + varName + " + \"\\\""));
+                } else {
+                    debugExpr = debugExpr.replaceAll("\\b" + varName + "\\b", 
+                            Matcher.quoteReplacement("\" + " + varName + " + \""));
+                }
             }
 
             if (isControlFlow) {
@@ -111,7 +122,6 @@ public class ExpressionExtractor {
         return false;
     }
 
-    // --- NY METOD: Delar ENDAST om likhetstecknet är på ytternivå ---
     private String[] splitTopLevelAssignment(String line) {
         int depth = 0;
         boolean inQuotes = false;
@@ -119,23 +129,18 @@ public class ExpressionExtractor {
         for (int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
             
-            // Hantera citationstecken (strunta i escapeade tecken som \")
-            if (c == '"' && (i == 0 || line.charAt(i - 1) != '\\')) {
-                inQuotes = !inQuotes;
-            }
+            if (c == '"' && (i == 0 || line.charAt(i - 1) != '\\')) inQuotes = !inQuotes;
             if (inQuotes) continue;
 
             if (c == '(') depth++;
             else if (c == ')') depth--;
             else if (c == '=' && depth == 0) {
-                // Kolla så det inte är ==, !=, <= eller >=
                 if (i > 0) {
                     char prev = line.charAt(i - 1);
                     if (prev == '=' || prev == '!' || prev == '<' || prev == '>') continue;
                 }
                 if (i < line.length() - 1 && line.charAt(i + 1) == '=') continue;
 
-                // Returnerar vänstersidan (inklusive operatören t.ex. '=' eller '+=') och högersidan
                 String leftSide = line.substring(0, i + 1);
                 String rightSide = line.substring(i + 1);
                 return new String[] { leftSide, rightSide };
@@ -144,7 +149,6 @@ public class ExpressionExtractor {
         return null;
     }
 
-    // --- UPPDATERAD METOD: Blundar även för kommatecken inuti strängar ---
     private List<String> splitArguments(String argsString) {
         List<String> args = new ArrayList<>();
         int parenDepth = 0;
@@ -164,7 +168,7 @@ public class ExpressionExtractor {
                 else if (c == ',' && parenDepth == 0) {
                     args.add(currentArg.toString().trim());
                     currentArg.setLength(0);
-                    continue; // Gå till nästa varv i loopen, spara inte kommatecknet
+                    continue; 
                 }
             }
             currentArg.append(c);
@@ -176,41 +180,51 @@ public class ExpressionExtractor {
     public TempVarsAndCodeLine extractExpressions(String javaLine, int lineNumber) {
         List<String> tempDecls = new ArrayList<>();
         List<String> tempNames = new ArrayList<>();
+        List<String> stringTempNames = new ArrayList<>(); // NYTT
         
         Matcher indentMatcher = Pattern.compile("^\\s*").matcher(javaLine);
         String indentation = indentMatcher.find() ? indentMatcher.group() : "";
         String workingLine = javaLine.trim();
 
+// --- NY KOLL: Strunta i allt om raden är en kommentar ---
+        if (workingLine.startsWith("//") || workingLine.startsWith("/*") || workingLine.startsWith("*")) {
+            System.out.println("extractExpressions hittat kommentar tempDecls = " + tempDecls+", tempNames = " + tempNames);
+            return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, stringTempNames, false);
+        }        
+        
         String[] tokens = workingLine.split("\\W+", 2);
         String firstWord = tokens.length > 0 ? tokens[0] : "";
         
         List<String> controlFlowKeywords = List.of("for", "while", "if", "else", "switch", "catch", "do");
         if (controlFlowKeywords.contains(firstWord)) {
-            return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, true);
+            return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, stringTempNames, true);
         }
         
         List<String> declarationKeywords = List.of("public", "private", "protected", "void", "class", "interface", "abstract");
         if (declarationKeywords.contains(firstWord)) {
-            return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, false);
+            return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, stringTempNames, false);
         }
 
-        // 1. Hantera tilldelningar via den nya Top-Level-metoden
+        // 1. Hantera tilldelningar
         String[] assignParts = splitTopLevelAssignment(workingLine);
         if (assignParts != null) {
-            String leftSide = assignParts[0]; // e.g. "int a =" eller "total +="
-            String rightSide = assignParts[1].trim(); // e.g. "b + c;"
+            String leftSide = assignParts[0];
+            String rightSide = assignParts[1].trim();
 
             if (rightSide.endsWith(";")) rightSide = rightSide.substring(0, rightSide.length() - 1);
 
             if (isLiteral(rightSide) || containsIgnoredTerm(rightSide)) {
-                return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, false);
+                return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, stringTempNames, false);
             }
 
             String tempName = getNextTemp(lineNumber);
             tempDecls.add(indentation + "var " + tempName + " = " + rightSide + ";");
             tempNames.add(tempName);
             
-            return new TempVarsAndCodeLine(indentation + leftSide.trim() + " " + tempName + ";", tempDecls, tempNames, false);
+            // NYTT: Identifiera om uttrycket är en sträng (innehåller ")
+            if (rightSide.contains("\"")) stringTempNames.add(tempName); 
+            
+            return new TempVarsAndCodeLine(indentation + leftSide.trim() + " " + tempName + ";", tempDecls, tempNames, stringTempNames, false);
         }
 
         // 2. Hantera funktionsanrop
@@ -233,7 +247,7 @@ public class ExpressionExtractor {
             }
             
             if (isMethodDeclaration || workingLine.endsWith("{")) {
-                return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, false);
+                return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, stringTempNames, false);
             }
 
             for (String arg : args) {
@@ -244,16 +258,20 @@ public class ExpressionExtractor {
                         String tempName = getNextTemp(lineNumber);
                         tempDecls.add(indentation + "var " + tempName + " = " + arg + ";");
                         tempNames.add(tempName);
+                        
+                        // NYTT: Identifiera om uttrycket är en sträng (innehåller ")
+                        if (arg.contains("\"")) stringTempNames.add(tempName);
+                        
                         newArgs.add(tempName);
                     }
                 }
             }
 
             String newFuncCall = indentation + methodName + "(" + String.join(", ", newArgs) + ");";
-            return new TempVarsAndCodeLine(newFuncCall, tempDecls, tempNames, false);
+            return new TempVarsAndCodeLine(newFuncCall, tempDecls, tempNames, stringTempNames, false);
         }
 
-        return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, false);
+        return new TempVarsAndCodeLine(javaLine, tempDecls, tempNames, stringTempNames, false);
     }
 
     private String getNextTemp(int lineNumber) {
@@ -264,13 +282,11 @@ public class ExpressionExtractor {
     public static void main(String[] args) {
         ExpressionExtractor extractor = new ExpressionExtractor();
         
-        System.out.println("--- Test: Funktionsanrop med inkrementella argument ---");
-        TempVarsAndCodeLine res = extractor.extractExpressions("    circle(xboll+=speedx, yboll+=speedy, 30);", 18);
-        System.out.println("Körbar kod:\n" + res.toString());
-        System.out.println("\nDebug utskrift:\n" + res.getPrintStatement());
-        
-        System.out.println("\n--- Test: Top-Level Tilldelning med += ---");
-        TempVarsAndCodeLine res2 = extractor.extractExpressions("total += a * b;", 20);
-        System.out.println("Körbar kod:\n" + res2.toString());
+        System.out.println("--- Test: Omsluta strängar i debug-loggen ---");
+        // Testar din kodrad
+        TempVarsAndCodeLine res = extractor.extractExpressions("    text(faren+\" grader fahrenheit är \"+cel + \" grader celsius\",10,10, 90,90);", 22);
+        System.out.println("1. Körbar kod:\n" + res.toString());
+        System.out.println("\n2. Genererad print-sats:");
+        System.out.println(res.getPrintStatement());
     }
 }

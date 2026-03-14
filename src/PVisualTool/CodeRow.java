@@ -39,7 +39,7 @@ public class CodeRow {
         this.rowVars.addAll(rowVarsIn);
         ArrayList<CodeRowVar> thisRowVars = rowVars.get(rowVars.size() - 1);
         rowVars.remove(rowVars.size() - 1);
-        System.out.println("->CodeRow "+rowNr+" ---------------------------------------------------");
+        System.out.println("->CodeRow " + rowNr + " ---------------------------------------------------");
         System.out.println("row = " + row);
         this.row = row;
         String rowTr = row.trim();
@@ -102,7 +102,7 @@ public class CodeRow {
 
             }
         }
-        
+
         addVars(row, blockLevel, rowVars.get(blockLevel));
 
         System.out.println("CodeRow efter addLocalVars(); rowBlockVars = " + rowVars);
@@ -135,6 +135,9 @@ public class CodeRow {
         for (int i = 0; i < tempVars.size(); i++) {
             String ar = tempVars.get(i) + "\n";
             ret += ar;
+            if (ar.contains("Skapa")) {
+                System.out.println("Skapa hittat bland variablerna ar = " + ar);
+            }
 
         }
 
@@ -163,12 +166,13 @@ public class CodeRow {
         return ret.toString();
     }
 
-    String getNextLineToShow(){
-        if(showNextLine!=null){
-            return "+\"\\n"+showNextLine+"\"";
+    String getNextLineToShow() {
+        if (showNextLine != null) {
+            return "+\"\\n" + showNextLine + "\"";
         }
         return "";
     }
+
     public String getRowWithInsertedOrigVariables() {
         System.out.println("->getRowWithInsertedOrigVariables rowNr: " + rowNr);
         List<CodeRowVar> allVars = new ArrayList<>();
@@ -177,9 +181,8 @@ public class CodeRow {
                 allVars.addAll(rowVars.get(i));
             }
         }
-    
+
         // Do NOT trim the row, to preserve indentation.
-    
         // Pattern for for-loops: for(init; condition; update)
         Pattern forPattern = Pattern.compile("^(\\s*for\\s*\\([^;]*;)([^;]*)(;[^)]*\\).*)$");
         Matcher forMatcher = forPattern.matcher(row);
@@ -187,13 +190,13 @@ public class CodeRow {
             String part1 = forMatcher.group(1);
             String condition = forMatcher.group(2);
             String part2 = forMatcher.group(3);
-            
+
             String processedCondition = buildStringExpression(condition, allVars, null);
-            
+
             String finalExpr = "\"" + escape(part1) + "\" + " + processedCondition + " + \"" + escape(part2) + "\"";
             return cleanupStringExpression(finalExpr);
         }
-    
+
         // Pattern for if/while: if(condition) or while(condition)
         Pattern ifWhilePattern = Pattern.compile("^(\\s*(?:if|while)\\s*\\()([^)]*)(\\).*)$");
         Matcher ifWhileMatcher = ifWhilePattern.matcher(row);
@@ -201,13 +204,13 @@ public class CodeRow {
             String part1 = ifWhileMatcher.group(1);
             String condition = ifWhileMatcher.group(2);
             String part2 = ifWhileMatcher.group(3);
-    
+
             String processedCondition = buildStringExpression(condition, allVars, null);
-    
+
             String finalExpr = "\"" + escape(part1) + "\" + " + processedCondition + " + \"" + escape(part2) + "\"";
             return cleanupStringExpression(finalExpr);
         }
-    
+
         // Fallback for simple assignments etc.
         String assignedVar = null;
         String[] parts = row.split("=");
@@ -218,22 +221,22 @@ public class CodeRow {
         }
         return buildStringExpression(row, allVars, assignedVar);
     }
-    
+
     private String buildStringExpression(String input, List<CodeRowVar> allVars, String assignedVar) {
         StringBuilder result = new StringBuilder("\"");
         boolean inString = false;
         boolean inCharLiteral = false;
-    
+
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
-    
+
             if (c == '"' && (i == 0 || input.charAt(i - 1) != '\\')) {
                 inString = !inString;
             }
             if (c == '\'' && (i == 0 || input.charAt(i - 1) != '\\')) {
                 inCharLiteral = !inCharLiteral;
             }
-    
+
             if (!inString && !inCharLiteral && Character.isJavaIdentifierStart(c)) {
                 StringBuilder identifier = new StringBuilder();
                 identifier.append(c);
@@ -244,7 +247,7 @@ public class CodeRow {
                 }
                 String idString = identifier.toString();
                 boolean isVar = false;
-    
+
                 if (!idString.equals(assignedVar)) {
                     for (CodeRowVar var : allVars) {
                         if (var.getVarName().equals(idString)) {
@@ -253,26 +256,26 @@ public class CodeRow {
                         }
                     }
                 }
-    
+
                 if (isVar) {
                     result.append("\"+").append(idString).append("+\"");
                 } else {
                     result.append(idString);
                 }
-                i = j - 1; 
+                i = j - 1;
             } else {
                 result.append(escapeChar(c));
             }
         }
-    
+
         result.append("\"");
         return cleanupStringExpression(result.toString());
     }
-    
+
     private String escape(String text) {
         return text.replace("\\", "\\\\").replace("\"", "\\\"");
     }
-    
+
     private String escapeChar(char c) {
         if (c == '"') {
             return "\\\"";
@@ -282,11 +285,13 @@ public class CodeRow {
         }
         return String.valueOf(c);
     }
-    
+
     private String cleanupStringExpression(String expr) {
         String cleaned = expr.replace("+\"\"+", "+");
-        if (cleaned.equals("\"\"")) return cleaned;
-    
+        if (cleaned.equals("\"\"")) {
+            return cleaned;
+        }
+
         if (cleaned.startsWith("\"\"+")) {
             cleaned = cleaned.substring(3);
         }
@@ -305,20 +310,22 @@ public class CodeRow {
             rowBlockVars.add(newVar);
 
         } else {
-            String assArr[] = row.split("=");
-            if (assArr.length > 1) {
+            if (!row.trim().startsWith("//")) {
+                String assArr[] = row.split("=");
+                if (assArr.length > 1) {
 
-                String[] creaArr = assArr[0].split(" ");
-                if (creaArr.length > 1) {
-                    final String varType = creaArr[0].trim();
-                    varName = creaArr[1].trim();
-                    if (varName.length() >= 1) {
-                        CodeRowVar newVar = new CodeRowVar(varType, varName, assArr[1].trim().replace(";", ""));
+                    String[] creaArr = assArr[0].split(" ");
+                    if (creaArr.length > 1) {
+                        final String varType = creaArr[0].trim();
+                        varName = creaArr[1].trim();
+                        if (varName.length() >= 1) {
+                            CodeRowVar newVar = new CodeRowVar(varType, varName, assArr[1].trim().replace(";", ""));
 
-                        System.out.println("På raden fanns: '" + newVar + "'");
-                        rowBlockVars.add(newVar);
-                    } else {
-                        System.out.println("addLocalVars: hittat variabelnamn var tomt");
+                            System.out.println("På raden fanns: '" + newVar + "'");
+                            rowBlockVars.add(newVar);
+                        } else {
+                            System.out.println("addLocalVars: hittat variabelnamn var tomt");
+                        }
                     }
                 }
             }
@@ -328,11 +335,12 @@ public class CodeRow {
     String getDebugCode(boolean funcMode, String extraIntheMiddle) {
         String ret;
         if (meaningLess || (funcMode && blockLevel == 0)) {
-            ret = row + "//tom  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n";
+            ret = row + "//tom  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
+                    + extraIntheMiddle;
 
         } else {
             ret = getExtraLines()
-                    + row  + "\n"  //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
+                    + row + "\n" //+ "//vanlig  funcMode: " + funcMode + " blockLevel: " + blockLevel + "\n"
                     + extraIntheMiddle
                     + getShowLine();
         }
