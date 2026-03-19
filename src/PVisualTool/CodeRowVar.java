@@ -9,6 +9,7 @@ package PVisualTool;
  * @author dahjon
  */
 public class CodeRowVar {
+
     private String type;
     private String varName;
     private String value;
@@ -20,7 +21,6 @@ public class CodeRowVar {
         this.value = value;
     }
 
-
     public String getVarName() {
         return varName;
     }
@@ -28,21 +28,26 @@ public class CodeRowVar {
     public String getValue() {
         return value;
     }
-    
-    public String getAssignmentRow(){
-        return varName+" = "+value;
+
+    public String getAssignmentRow() {
+        return varName + " = " + value;
     }
-    
-    public String getshowRow(){
-        return varName +" = \"+"+varName;
+
+    public String getshowRow() {
+        if (type.contains("[]")) {
+            return varName + " = \"+java.util.Arrays.toString("+varName+")";
+
+        } else {
+            return varName + " = \"+" + varName;
+        }
     }
-    public String getshowRowSingle(){
-        return "\""+varName +" = \"+"+varName;
+
+    public String getshowRowSingle() {
+        return "\"" + varName + " = \"+" + varName;
     }
-    
-    
-    public String getDefinitionRowWithAssignment(){
-        return type + " "+getAssignmentRow();
+
+    public String getDefinitionRowWithAssignment() {
+        return type + " " + getAssignmentRow();
     }
 
     @Override
@@ -51,7 +56,4 @@ public class CodeRowVar {
         //return getDefinitionRowWithAssignment();
     }
 
-    
-    
-    
 }

@@ -319,7 +319,9 @@ public class CodeRow {
                         final String varType = creaArr[0].trim();
                         varName = creaArr[1].trim();
                         if (varName.length() >= 1) {
+                            
                             CodeRowVar newVar = new CodeRowVar(varType, varName, assArr[1].trim().replace(";", ""));
+                            System.out.println("addVars newVar = " + newVar);
 
                             System.out.println("På raden fanns: '" + newVar + "'");
                             rowBlockVars.add(newVar);
@@ -363,7 +365,7 @@ public class CodeRow {
         StringBuilder s = new StringBuilder();
         for (ArrayList<CodeRowVar> varList : rowVars) {
             for (CodeRowVar v : varList) {
-                addVarToShowString(s, v.getshowRow());
+                addVarToShowString(s, v);
             }
         }
 
@@ -374,8 +376,9 @@ public class CodeRow {
         return s.toString();
     }
 
-    void addVarToShowString(StringBuilder showString, String varName) {
+    void addVarToShowString(StringBuilder showString,CodeRowVar v ) {
         System.out.println("->addVarToShowString showString.length() = " + showString.length());
+        String varName = v.getshowRow();
         if (!varName.isBlank()) {
             if (showString.length() != 0) {
                 showString.append("+\", ");

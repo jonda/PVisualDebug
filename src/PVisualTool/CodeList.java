@@ -63,6 +63,18 @@ public class CodeList extends ArrayList<CodeRow> {
     }
 
     public static void main(String[] args) {
+        String code ="size(600,100);\n" +
+"int[] position = {10,12,15,20,25,30,32,30,25,20,15,12,10,7,5,4,3,4,5,7,9,10,10};\n" +
+"\n" +
+"for(int i = 0; i < position.length; i++){\n" +
+"  ellipse(10+10*i,height-position[i],13,13);\n" +
+"}\n" +
+"strokeWeight(4);\n" +
+"for(int i = 0; i < position.length-1; i++){\n" +
+"  line(10+20*i,height-position[i]*2,10+20*(i+1),height-position[i+1]*2);\n" +
+"}";
+        
+        
 //        String code = "int a = 2\n"
 //                + "String b = \"3\"\n"
 //                + "for(int i=0;i<10; i++){\n"
@@ -70,22 +82,22 @@ public class CodeList extends ArrayList<CodeRow> {
 //                + "}\n"
 //                + "\n";
 
-String code = "// Skapa ett prgram som räknar ut ekvationen x2/200=300, genom att \n" +
-"// först sätta x till noll, och sedan öka x med 0.1 och sedan sätta \n" +
-"// y=x*x/200 och köra så länge som y<300\n" +
-"\n" +
-"size(400, 400);\n" +
-"background(0);\n" +
-"float  x=0;\n" +
-"float y=0;\n" +
-"fill(255,0,0);\n" +
-"noStroke();\n" +
-"while (y<300) {\n" +
-"  y=x*x/200;\n" +
-"  println(x+\", \"+y);\n" +
-"  ellipse(x, height-y, 3, 3);\n" +
-"  x=x+.1;\n" +
-"}";
+//String code = "// Skapa ett prgram som räknar ut ekvationen x2/200=300, genom att \n" +
+//"// först sätta x till noll, och sedan öka x med 0.1 och sedan sätta \n" +
+//"// y=x*x/200 och köra så länge som y<300\n" +
+//"\n" +
+//"size(400, 400);\n" +
+//"background(0);\n" +
+//"float  x=0;\n" +
+//"float y=0;\n" +
+//"fill(255,0,0);\n" +
+//"noStroke();\n" +
+//"while (y<300) {\n" +
+//"  y=x*x/200;\n" +
+//"  println(x+\", \"+y);\n" +
+//"  ellipse(x, height-y, 3, 3);\n" +
+//"  x=x+.1;\n" +
+//"}";
 //
 //String code = "import javax.swing.*;\n" +
 //"\n" +

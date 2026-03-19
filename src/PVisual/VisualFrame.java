@@ -195,6 +195,7 @@ public class VisualFrame extends JDialog {
             final Document origDoc = origCodeArea.getDocument();
             final Document code1Doc = code1Area.getDocument();
             final Document code2Doc = code2Area.getDocument();
+            boolean extraLinesInserted = false;
             for (int i = 0; i < rowList.size(); i++) {
                 PVRow row = rowList.get(i);
                 StringBuilder sb = new StringBuilder();
@@ -206,7 +207,7 @@ public class VisualFrame extends JDialog {
                     SimpleAttributeSet colorCode = new SimpleAttributeSet();
                     StyleConstants.setFontFamily(colorCode, "Courier New Italic");
                     StyleConstants.setFontSize(colorCode, 12);
-                    
+
                     if (row.getRowNr() == currRowNr) {
                         StyleConstants.setForeground(colorCode, Color.RED);
                     } else {
@@ -214,9 +215,17 @@ public class VisualFrame extends JDialog {
 
                     }
                     origDoc.insertString(origDoc.getLength(), sb.toString(), colorCode);
+                    
+                    if(row.getRowNr() == currRowNr +1 && !row.getCode1().isBlank()){
+                        
+                        extraLinesInserted = true;
+                    }
 
-                    if (row.getRowNr() == currRowNr + 1 && row.getCode1().isBlank()) {
-                        row.setCode1andCode2toOrigCode();
+                    if (!extraLinesInserted && row.getRowNr() > currRowNr && row.getCode1().isBlank()) {
+                        if (!row.getOrigCode().isBlank() && !row.getOrigCode().trim().startsWith("//")) {
+                            row.setCode1andCode2toOrigCode();
+                            extraLinesInserted = true;
+                        }
                     }
                     String code1 = row.getCode1();
                     String code2 = row.getCode2();
