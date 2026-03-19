@@ -182,7 +182,6 @@ public class CodeRow {
             }
         }
 
-        // Do NOT trim the row, to preserve indentation.
         // Pattern for for-loops: for(init; condition; update)
         Pattern forPattern = Pattern.compile("^(\\s*for\\s*\\([^;]*;)([^;]*)(;[^)]*\\).*)$");
         Matcher forMatcher = forPattern.matcher(row);
@@ -238,19 +237,47 @@ public class CodeRow {
             }
 
             if (!inString && !inCharLiteral && Character.isJavaIdentifierStart(c)) {
-                StringBuilder identifier = new StringBuilder();
-                identifier.append(c);
-                int j = i + 1;
-                while (j < input.length() && Character.isJavaIdentifierPart(input.charAt(j))) {
-                    identifier.append(input.charAt(j));
-                    j++;
-                }
-                String idString = identifier.toString();
-                boolean isVar = false;
+                int j = i;
+                // Greedily consume a valid Java expression part: identifier, then optional . or [] chains
+                while (j < input.length()) {
+                    // Consume the identifier part
+                    int idStart = j;
+                    while (j < input.length() && Character.isJavaIdentifierPart(input.charAt(j))) {
+                        j++;
+                    }
+                    // If we didn't consume anything, it's not a valid chain start
+                    if (j == idStart) break;
 
-                if (!idString.equals(assignedVar)) {
+                    // After an identifier, we can have . or [
+                    if (j < input.length()) {
+                        if (input.charAt(j) == '.') {
+                            j++; // consume dot and continue loop to find next part of the chain
+                            continue;
+                        } else if (input.charAt(j) == '[') {
+                            // Consume until matching ]
+                            int bracketCount = 1;
+                            j++; // consume '['
+                            while(j < input.length() && bracketCount > 0) {
+                                if (input.charAt(j) == '[') bracketCount++;
+                                if (input.charAt(j) == ']') bracketCount--;
+                                j++;
+                            }
+                            // j is now after the final ']', continue loop to see if there's more chain (e.g. .length)
+                            continue;
+                        }
+                    }
+                    // If it's not a . or [, the chain ends
+                    break;
+                }
+
+                // The full expression is from i to j
+                String exprString = input.substring(i, j);
+                String baseVar = exprString.split("[.\\[]")[0];
+
+                boolean isVar = false;
+                if (!baseVar.equals(assignedVar)) {
                     for (CodeRowVar var : allVars) {
-                        if (var.getVarName().equals(idString)) {
+                        if (var.getVarName().equals(baseVar)) {
                             isVar = true;
                             break;
                         }
@@ -258,11 +285,11 @@ public class CodeRow {
                 }
 
                 if (isVar) {
-                    result.append("\"+").append(idString).append("+\"");
+                    result.append("\"+(").append(exprString).append(")+\"");
                 } else {
-                    result.append(idString);
+                    result.append(exprString);
                 }
-                i = j - 1;
+                i = j - 1; // Update main loop index
             } else {
                 result.append(escapeChar(c));
             }
